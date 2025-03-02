@@ -3,13 +3,8 @@
 <head>
   <title>Ultralight Demo(lhy)</title>
 
-  <script>
-    // c++调用js
-    function call_to_js(message)
-    {
-      document.getElementById('msg').innerHTML = message;
-    }
-  </script>
+  <!-- 使用外部js -->
+  <script src="app.js"></script>
 
   <style>
     body {
@@ -20,7 +15,7 @@
 
 <body>
   <div id="msg"></div>
-  <button onclick="expose_to_js();">Click Me</button>
+  <button id="btn">Click Me</button>
   <div id="result"></div>
 </body>
 

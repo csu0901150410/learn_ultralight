@@ -2,6 +2,8 @@
 
 #include <JavaScriptCore/JSRetainPtr.h>
 
+#include <string>
+
 #define WINDOW_WIDTH  600
 #define WINDOW_HEIGHT 400
 
@@ -16,7 +18,7 @@ MyApp::MyApp() {
   /// kWindowFlags_Resizable.
   ///
   window_ = Window::Create(app_->main_monitor(), WINDOW_WIDTH, WINDOW_HEIGHT,
-    false, kWindowFlags_Titled | kWindowFlags_Resizable);
+    false, kWindowFlags_Titled | kWindowFlags_Resizable | kWindowFlags_Maximizable);
 
   ///
   /// Create our HTML overlay-- we don't care about its initial size and
@@ -96,21 +98,6 @@ void MyApp::OnFinishLoading(ultralight::View* caller,
   ///
 }
 
-// 注册到js的c++函数
-JSValueRef expose_to_js(JSContextRef ctx, JSObjectRef function, JSObjectRef thisObject, size_t argumentCount, const JSValueRef arguments[], JSValueRef *exception)
-{
-  const char *str = "document.getElementById('result').innerText = 'c++ function called by js'";
-
-  JSStringRef script = JSStringCreateWithUTF8CString(str);
-
-  // 执行js代码
-  JSEvaluateScript(ctx, script, NULL, NULL, 0, NULL);
-
-  JSStringRelease(script);
-
-  return JSValueMakeNull(ctx);
-}
-
 void MyApp::OnDOMReady(ultralight::View* caller,
                        uint64_t frame_id,
                        bool is_main_frame,
@@ -121,62 +108,27 @@ void MyApp::OnDOMReady(ultralight::View* caller,
   /// This is the best time to setup any JavaScript bindings.
   ///
 
-  // 通过JSObjectCallAsFunction调用页面js函数
-  auto scoped_context = caller->LockJSContext();
-  JSContextRef ctx = (*scoped_context);
+  RefPtr<JSContext> context = caller->LockJSContext();
+  SetJSContext(context->ctx());
 
-  JSRetainPtr<JSStringRef> str = adopt(JSStringCreateWithUTF8CString("call_to_js"));
+  // 全局js对象，也就是window
+  JSObject globalObj = JSGlobalObject();
 
-  // 通过字符串获取js函数的值
-  JSValueRef func = JSEvaluateScript(ctx, str.get(), NULL, NULL, 0, NULL);
+  // c++和js交互，就两个需求
+  // 1、在js中调用c++的函数（主要是这个），比如界面按钮按下，c++后台执行一些任务
+  // 2、在c++中调用js函数，比如任务执行过程中，需要更新界面，比如进度条、调起子界面
 
-  // 确保是对象
-  if (JSValueIsObject(ctx, func))
-  {
-    // 转成对象
-    JSObjectRef funcObj = JSValueToObject(ctx, func, NULL);
+  // 注册c++函数到js全局对象，只能注册成员函数，可以在成员函数内分发
+  globalObj["expose_to_js"] = BindJSCallbackWithRetval(&MyApp::expose_to_js);
 
-    // 确保是函数对象
-    if (funcObj && JSObjectIsFunction(ctx, funcObj))
-    {
-      JSRetainPtr<JSStringRef> msg = adopt(JSStringCreateWithUTF8CString("js function called by c++"));
+  // bug - 只能存在局部对象，存在成员call_dynamic_function_关闭窗口时会报错
+  // 从js全局对象中获取js函数，同样，不同的js函数可以在这个函数中分发
+  // call_dynamic_function_ = globalObj["call_to_js"];
+  JSFunction jsFunc = globalObj["call_to_js"];
 
-      // 构造参数
-      const JSValueRef args[] = {
-        JSValueMakeString(ctx, msg.get())
-      };
-
-      // 调用js函数
-      size_t num_args = sizeof(args) / sizeof(JSValueRef);
-      JSValueRef exception = 0;
-      JSValueRef result = JSObjectCallAsFunction(ctx, funcObj, NULL, num_args, args, &exception);
-    
-      if (exception)
-      {
-        // 异常处理
-      }
-
-      if (result)
-      {
-        // 返回值处理
-      }
-    }
-  }
-
-  // 注册/暴露c++函数到js
-  {
-    // 根据c++函数创建js函数对象
-    JSStringRef name = JSStringCreateWithUTF8CString("expose_to_js");
-    JSObjectRef func = JSObjectMakeFunctionWithCallback(ctx, name, expose_to_js);
-  
-    // 全局js对象，也就是window
-    JSObjectRef globalObj = JSContextGetGlobalObject(ctx);
-
-    // 根据给定名称向js注册c++函数，js中可根据此名称调用c++函数
-    JSObjectSetProperty(ctx, globalObj, name, func, kJSPropertyAttributeNone, NULL);
-
-    JSStringRelease(name);
-  }
+  // 在c++中调用js函数，指定函数名，指定参数
+  // call_dynamic_function_({"dynamic_function_1", "js function called by c++"});
+  jsFunc({"dynamic_function_1", "js function called by c++"});
 }
 
 void MyApp::OnChangeCursor(ultralight::View* caller,
@@ -197,4 +149,28 @@ void MyApp::OnChangeTitle(ultralight::View* caller,
   /// We update the main window's title here.
   ///
   window_->SetTitle(title.utf8().data());
+}
+
+JSValue command_00(const JSObject& thisObject, const JSArgs& args)
+{
+  // js调用c++
+
+  // 作为演示，再调用一个js函数去更新界面
+  JSObject globalObj = JSGlobalObject();
+  JSFunction jsFunc = globalObj["call_to_js"];
+  jsFunc({"dynamic_function_2", "c++ function called by js"});
+
+  return JSValue();
+}
+
+JSValue MyApp::expose_to_js(const JSObject &thisObject, const JSArgs &args)
+{
+  ultralight::String name = args[0].ToString();
+
+  std::string strname = std::string(name.utf8().data());
+  if (0 == std::strcmp(strname.c_str(), "command_00"))
+  {
+    command_00(thisObject, JSArgs());
+  }
+  return JSValue();
 }
