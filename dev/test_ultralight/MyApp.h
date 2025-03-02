@@ -43,6 +43,11 @@ public:
   virtual void OnChangeTitle(ultralight::View* caller,
     const String& title) override;
 
+  JSValue expose_to_js(const JSObject& thisObject, const JSArgs& args);
+
+private:
+  JSFunction call_dynamic_function_;
+
 protected:
   RefPtr<App> app_;
   RefPtr<Window> window_;
