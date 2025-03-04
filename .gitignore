@@ -1,5 +1,7 @@
 Desktop.ini
 
+.vscode
+
 dev/x64
 dev/.vs
 dev/.vscode

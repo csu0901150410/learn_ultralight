@@ -1,176 +1,99 @@
 ﻿#include "MyApp.h"
 
-#include <JavaScriptCore/JSRetainPtr.h>
+#include <AppCore/AppCore.h>
 
+#include <iostream>
 #include <string>
+#include <chrono>
+#include <sstream>
+#include <iomanip>// for put_time
 
-#define WINDOW_WIDTH  600
-#define WINDOW_HEIGHT 400
+#include <memory>
+#include <thread>
 
 MyApp::MyApp() {
-  ///
-  /// Create our main App instance.
-  ///
-  app_ = App::Create();
+    Config config;
+    Platform::instance().set_config(config);
 
-  ///
-  /// Create a resizable window by passing by OR'ing our window flags with
-  /// kWindowFlags_Resizable.
-  ///
-  window_ = Window::Create(app_->main_monitor(), WINDOW_WIDTH, WINDOW_HEIGHT,
-    false, kWindowFlags_Titled | kWindowFlags_Resizable | kWindowFlags_Maximizable);
+    // 未使用App::Create()时，需要指定平台相关的处理程序，必须指定的是
+    // font_loader和file_system，这里使用appcore获取到的，也可以指定
+    // 自己实现的处理程序
+    Platform::instance().set_font_loader(GetPlatformFontLoader());
 
-  ///
-  /// Create our HTML overlay-- we don't care about its initial size and
-  /// position because it'll be calculated when we call OnResize() below.
-  ///
-  overlay_ = Overlay::Create(window_, 1, 1, 0, 0);
+    // appcore提供的文件系统处理程序，可以指定资源路径（用 file:/// 访问）
+    Platform::instance().set_file_system(GetPlatformFileSystem("./assets/"));
 
-  ///
-  /// Force a call to OnResize to perform size/layout of our overlay.
-  ///
-  OnResize(window_.get(), window_->width(), window_->height());
+    // MyApp继承自Logger，可以将this设置为logger
+    Platform::instance().set_logger(this);
 
-  ///
-  /// Load a page into our overlay's View
-  ///
-  overlay_->view()->LoadURL("file:///app.html");
+    // 创建渲染器，整个app只能创建一次，并且要在所有View对象之前Platform设置之后创建
+    renderer_ = Renderer::Create();
 
-  ///
-  /// Register our MyApp instance as an AppListener so we can handle the
-  /// App's OnUpdate event below.
-  ///
-  app_->set_listener(this);
+    ViewConfig view_config;// 使用默认配置就行
+    view_ = renderer_->CreateView(1920, 1080, view_config, nullptr);
 
-  ///
-  /// Register our MyApp instance as a WindowListener so we can handle the
-  /// Window's OnResize event below.
-  ///
-  window_->set_listener(this);
+    // 将app设置为view的加载监听者，这样view的加载事件可以交由app处理
+    view_->set_load_listener(this);
 
-  ///
-  /// Register our MyApp instance as a LoadListener so we can handle the
-  /// View's OnFinishLoading and OnDOMReady events below.
-  ///
-  overlay_->view()->set_load_listener(this);
+    // 加载url指定的文件到View
+    view_->LoadURL("file:///page.html");
 
-  ///
-  /// Register our MyApp instance as a ViewListener so we can handle the
-  /// View's OnChangeCursor and OnChangeTitle events below.
-  ///
-  overlay_->view()->set_view_listener(this);
+    // 注意，View将会响应html文件的加载事件，并将其离屏渲染到surface
+    // 这里仅是将渲染的位图保存为PNG，不需要窗口Window
 }
 
 MyApp::~MyApp() {
+    // 置空就好，智能指针管理的内存会自动释放
+    view_ = nullptr;
+    renderer_ = nullptr;
 }
 
 void MyApp::Run() {
-  app_->Run();
+    LogMessage(LogLevel::Info, "Starting Run(), waiting for page to load...");
+
+    // 等待加载完成
+    do {
+        renderer_->Update();
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));// 10ms
+    } while(!render_done_);
+
+    // 渲染View
+    renderer_->Render();
+
+    // 没有通过Platform::set_surface_factory设置自己的surface的话，默认渲染到BitmapSurface
+    BitmapSurface *surface = (BitmapSurface*)view_->surface();
+    RefPtr<Bitmap> bitmap = surface->bitmap();
+    bitmap->WritePNG("../x64/Debug/result.png");
+
+    LogMessage(LogLevel::Info, "Saved a render of our page to result.png.");
 }
 
-void MyApp::OnUpdate() {
-  ///
-  /// This is called repeatedly from the application's update loop.
-  ///
-  /// You should update any app logic here.
-  ///
+void MyApp::OnFinishLoading(ultralight::View *caller, uint64_t frame_id,
+    bool is_main_frame, const String &url) {
+    if (is_main_frame)
+    {
+        LogMessage(LogLevel::Info, "Our page has loaded!");
+        render_done_ = true;
+    }
 }
 
-void MyApp::OnClose(ultralight::Window* window) {
-  app_->Quit();
-}
+void MyApp::LogMessage(LogLevel log_level, const String &message) {
+    // 自定义日志信息输出
 
-void MyApp::OnResize(ultralight::Window* window, uint32_t width, uint32_t height) {
-  ///
-  /// This is called whenever the window changes size (values in pixels).
-  ///
-  /// We resize our overlay here to take up the entire window.
-  ///
-  overlay_->Resize(width, height);
-}
+    // 获取当前时间并格式化为字符串
+    auto getCurrentTime = [](){
+        // 获取当前时间点
+        auto now = std::chrono::system_clock::now();
+        // 转换为 time_t 类型
+        std::time_t now_time_t = std::chrono::system_clock::to_time_t(now);
+        // 转换为 tm 结构体
+        std::tm now_tm = *std::localtime(&now_time_t);
 
-void MyApp::OnFinishLoading(ultralight::View* caller,
-                            uint64_t frame_id,
-                            bool is_main_frame,
-                            const String& url) {
-  ///
-  /// This is called when a frame finishes loading on the page.
-  ///
-}
+        // 使用 stringstream 格式化时间
+        std::stringstream ss;
+        ss << std::put_time(&now_tm, "%Y-%m-%d %H:%M:%S");
+        return ss.str();
+    };
 
-void MyApp::OnDOMReady(ultralight::View* caller,
-                       uint64_t frame_id,
-                       bool is_main_frame,
-                       const String& url) {
-  ///
-  /// This is called when a frame's DOM has finished loading on the page.
-  ///
-  /// This is the best time to setup any JavaScript bindings.
-  ///
-
-  RefPtr<JSContext> context = caller->LockJSContext();
-  SetJSContext(context->ctx());
-
-  // 全局js对象，也就是window
-  JSObject globalObj = JSGlobalObject();
-
-  // c++和js交互，就两个需求
-  // 1、在js中调用c++的函数（主要是这个），比如界面按钮按下，c++后台执行一些任务
-  // 2、在c++中调用js函数，比如任务执行过程中，需要更新界面，比如进度条、调起子界面
-
-  // 注册c++函数到js全局对象，只能注册成员函数，可以在成员函数内分发
-  globalObj["expose_to_js"] = BindJSCallbackWithRetval(&MyApp::expose_to_js);
-
-  // bug - 只能存在局部对象，存在成员call_dynamic_function_关闭窗口时会报错
-  // 从js全局对象中获取js函数，同样，不同的js函数可以在这个函数中分发
-  // call_dynamic_function_ = globalObj["call_to_js"];
-  JSFunction jsFunc = globalObj["call_to_js"];
-
-  // 在c++中调用js函数，指定函数名，指定参数
-  // call_dynamic_function_({"dynamic_function_1", "js function called by c++"});
-  jsFunc({"dynamic_function_1", "js function called by c++"});
-}
-
-void MyApp::OnChangeCursor(ultralight::View* caller,
-                           Cursor cursor) {
-  ///
-  /// This is called whenever the page requests to change the cursor.
-  ///
-  /// We update the main window's cursor here.
-  ///
-  window_->SetCursor(cursor);
-}
-
-void MyApp::OnChangeTitle(ultralight::View* caller,
-                          const String& title) {
-  ///
-  /// This is called whenever the page requests to change the title.
-  ///
-  /// We update the main window's title here.
-  ///
-  window_->SetTitle(title.utf8().data());
-}
-
-JSValue command_00(const JSObject& thisObject, const JSArgs& args)
-{
-  // js调用c++
-
-  // 作为演示，再调用一个js函数去更新界面
-  JSObject globalObj = JSGlobalObject();
-  JSFunction jsFunc = globalObj["call_to_js"];
-  jsFunc({"dynamic_function_2", "c++ function called by js"});
-
-  return JSValue();
-}
-
-JSValue MyApp::expose_to_js(const JSObject &thisObject, const JSArgs &args)
-{
-  ultralight::String name = args[0].ToString();
-
-  std::string strname = std::string(name.utf8().data());
-  if (0 == std::strcmp(strname.c_str(), "command_00"))
-  {
-    command_00(thisObject, JSArgs());
-  }
-  return JSValue();
+    std::cout << getCurrentTime() << " < " << message.utf8().data() << std::endl;
 }
