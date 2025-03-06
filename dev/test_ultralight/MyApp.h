@@ -1,38 +1,29 @@
-﻿#include <Ultralight/Ultralight.h>
+﻿#pragma once
+
+#include <AppCore/AppCore.h>
 
 using namespace ultralight;
 
-/**
- * 官方示例代码1 : 加载HTML文件并将其渲染到一个PNG文件
- *
- * 涉及的概念：
- * 1、指定平台相关的处理函数
- * 2、创建渲染器Renderer
- * 3、创建视图对象View
- * 4、加载本地文件到View
- * 5、自定义主循环等待文件加载完成
- * 6、渲染View
- * 7、保存渲染后的位图到PNG
- */
-
-class MyApp : public LoadListener, public Logger {
+class MyApp : public WindowListener, public ViewListener, public LoadListener
+{
 private:
-    RefPtr<Renderer> renderer_;
-    RefPtr<View> view_;
-    bool render_done_ = false;
+    RefPtr<App> app_;// 管理主窗口，提供消息循环、渲染器
+    RefPtr<Window> window_;// 主窗口
+    RefPtr<Overlay> overlay_;// 在主窗口内显示html页面
 
 public:
     MyApp();
     ~MyApp();
-
     void Run();
 
-    // 复写虚函数
+    // 复写WindowListener的事件处理函数
 public:
-    // Called when the page finishes loading a URL into a frame.
-    virtual void OnFinishLoading(ultralight::View *caller, uint64_t frame_id,
-                                 bool is_main_frame, const String &url) override;
+    virtual void OnClose(Window* window) override;
+    virtual void OnResize(Window* window, uint32_t width, uint32_t height) override;
 
-    // Called when the library wants to display a log message.
-    virtual void LogMessage(LogLevel log_level, const String &message) override;
+    // 复写ViewListener的事件处理函数
+public:
+    virtual void OnChangeCursor(View* caller, Cursor cursor) override;
+
+    virtual void OnFinishLoading(ultralight::View* caller, uint64_t frame_id, bool is_main_frame, const String& url) override;
 };
