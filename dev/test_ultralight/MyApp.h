@@ -4,26 +4,29 @@
 
 using namespace ultralight;
 
-class MyApp : public WindowListener, public ViewListener, public LoadListener
+// 一个窗口两个overlay来显示html内容
+// 通过监听窗口事件去调整overlay的大小
+
+class MyApp : public WindowListener, public ViewListener
 {
 private:
-    RefPtr<App> app_;// 管理主窗口，提供消息循环、渲染器
-    RefPtr<Window> window_;// 主窗口
-    RefPtr<Overlay> overlay_;// 在主窗口内显示html页面
+    RefPtr<App> app_;
+    RefPtr<Window> window_;
+    RefPtr<Overlay> left_pane_;
+    RefPtr<Overlay> right_pane_;
 
 public:
     MyApp();
     ~MyApp();
+
     void Run();
 
     // 复写WindowListener的事件处理函数
 public:
-    virtual void OnClose(Window* window) override;
-    virtual void OnResize(Window* window, uint32_t width, uint32_t height) override;
+    virtual void OnClose(ultralight::Window* window) override;
+    virtual void OnResize(ultralight::Window* window, uint32_t width_px, uint32_t height_px) override;
 
     // 复写ViewListener的事件处理函数
 public:
     virtual void OnChangeCursor(View* caller, Cursor cursor) override;
-
-    virtual void OnFinishLoading(ultralight::View* caller, uint64_t frame_id, bool is_main_frame, const String& url) override;
 };

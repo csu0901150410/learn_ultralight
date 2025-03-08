@@ -1,51 +1,60 @@
 ﻿#include "MyApp.h"
 
-#include <Ultralight/Ultralight.h>
+#define WINDOW_WIDTH    900
+#define WINDOW_HEIGHT   600
+#define LEFT_PANE_WIDTH 200
 
-MyApp::MyApp() {
-    Platform::instance().set_font_loader(GetPlatformFontLoader());
-    Platform::instance().set_file_system(GetPlatformFileSystem("./assets/"));
-
+MyApp::MyApp()
+{
     app_ = App::Create();
+    window_ = Window::Create(app_->main_monitor(), WINDOW_WIDTH, WINDOW_HEIGHT, false, kWindowFlags_Titled | kWindowFlags_Resizable);
 
-    // 创建主窗口
-    window_ = Window::Create(app_->main_monitor(), 800, 600, false, kWindowFlags_Titled | kWindowFlags_Resizable | kWindowFlags_Maximizable);
-    window_->SetTitle("Basic App");
-    window_->MoveToCenter();
+    left_pane_ = Overlay::Create(window_, 100, 100, 0, 0);
+    right_pane_ = Overlay::Create(window_, 100, 100, 0, 0);
+    OnResize(window_.get(), window_->width(), window_->height());
 
-    // 创建overlay覆盖整个主窗口
-    overlay_ = Overlay::Create(window_, window_->width(), window_->height(), 0, 0);
-    overlay_->view()->LoadURL("file:///page.html");
+    // 两个overlay各自加载html
+    left_pane_->view()->LoadURL("file:///sidebar.html");
+    right_pane_->view()->LoadURL("file:///content.html");
 
-    // 设置监听者为app，这样app可以处理窗口和视图的事件
+    // 当前类接管窗口和两个overlay的事件
     window_->set_listener(this);
-    overlay_->view()->set_view_listener(this);
+    left_pane_->view()->set_view_listener(this);
+    right_pane_->view()->set_view_listener(this);
 }
 
-MyApp::~MyApp() {
+MyApp::~MyApp()
+{
 }
 
-void MyApp::OnClose(Window *window) {
+void MyApp::Run()
+{
+    app_->Run();
+}
+
+void MyApp::OnClose(ultralight::Window* window)
+{
     app_->Quit();
 }
 
-void MyApp::OnResize(Window *window, uint32_t width, uint32_t height) {
-    overlay_->Resize(width, height); // overlay跟着变化，否则会显示黑色背景
+void MyApp::OnResize(ultralight::Window* window, uint32_t width_px, uint32_t height_px)
+{
+    // 左边的overlay定长，再计算右边overlay的剩余宽度
+    uint32_t left_pane_width_px = window_->ScreenToPixels(LEFT_PANE_WIDTH);
+    left_pane_->Resize(left_pane_width_px, height_px);
+
+    int right_pane_width_px = (int)width_px - left_pane_width_px;// 可能为负
+    if (right_pane_width_px <= 1)
+        right_pane_width_px = 1;
+    right_pane_->Resize(right_pane_width_px, height_px);
+
+    // 设置overlay的原点
+    left_pane_->MoveTo(0, 0);
+    right_pane_->MoveTo(left_pane_width_px, 0);
 }
 
 // 鼠标进出视图的时候，样式会改变，将其设置为窗口的鼠标样式
 void MyApp::OnChangeCursor(View *caller, Cursor cursor) {
     // window_->SetCursor(cursor);
     window_->SetCursor(kCursor_Hand); // 强制指定手形光标
-}
-
-void MyApp::OnFinishLoading(ultralight::View *caller, uint64_t frame_id, bool is_main_frame, const String &url) {
-    
-}
-
-void MyApp::Run() {
-    // 由appcore内部管理消息循环，renderer/view等都是appcore创建的
-    // 如果只是在html上边玩，这就够了，如果想要在窗口上绘制ultralight
-    // 渲染的html之外的东西，就要自己创建renderer和管理消息循环。
-    app_->Run();
 }
