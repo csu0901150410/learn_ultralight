@@ -24,12 +24,18 @@
     <ClCompile Include="lsWindow.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="lsGame.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="lsApp.h">
       <Filter>源文件</Filter>
     </ClInclude>
     <ClInclude Include="lsWindow.h">
+      <Filter>源文件</Filter>
+    </ClInclude>
+    <ClInclude Include="lsGame.h">
       <Filter>源文件</Filter>
     </ClInclude>
   </ItemGroup>

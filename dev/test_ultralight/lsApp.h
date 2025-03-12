@@ -6,7 +6,7 @@
 
 using namespace ultralight;
 
-class lsApp : public WindowListener, public ViewListener, public LoadListener
+class lsApp : public lsWindowListener, public ViewListener, public LoadListener
 {
 public:
     lsApp();
@@ -16,8 +16,9 @@ public:
 
     void Draw();
 
-    virtual void OnFinishLoading(ultralight::View* caller, uint64_t frame_id, bool is_main_frame,
-        const String& url) override;
+    virtual void OnFinishLoading(ultralight::View* caller, uint64_t frame_id, bool is_main_frame, const String& url) override;
+
+    virtual void OnResize(uint32_t width, uint32_t height) override;
 
 protected:
     std::unique_ptr<lsWindow> window_;// 主窗口
@@ -26,6 +27,4 @@ protected:
 
     RefPtr<Renderer> renderer_;
     RefPtr<View> view_;
-
-    bool done_;
 };

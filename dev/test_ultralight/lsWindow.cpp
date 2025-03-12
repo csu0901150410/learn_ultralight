@@ -16,15 +16,13 @@ lsWindow::~lsWindow()
 }
 
 uint32_t lsWindow::width() const {
-    // sf::Vector2u size = window_->getSize();
-    // return size.x;
-    return width_;
+    sf::Vector2u size = window_->getSize();
+    return size.x;
 }
 
 uint32_t lsWindow::height() const {
-    // sf::Vector2u size = window_->getSize();
-    // return size.y;
-    return height_;
+    sf::Vector2u size = window_->getSize();
+    return size.y;
 }
 
 void lsWindow::Close() {
@@ -34,4 +32,8 @@ void lsWindow::Close() {
 void lsWindow::PresentFrame()
 {
     window_->display();
+}
+
+void lsWindow::OnResize(uint32_t width, uint32_t height) {
+    listener_->OnResize(width, height);
 }

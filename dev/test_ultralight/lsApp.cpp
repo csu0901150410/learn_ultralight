@@ -21,8 +21,6 @@ lsApp::lsApp() {
     view_->LoadURL("file:///page.html");
     view_->set_view_listener(this);
     view_->set_load_listener(this);
-
-    done_ = false;
 }
 
 lsApp::~lsApp() {
@@ -55,8 +53,13 @@ void lsApp::Run() {
                                        .count();
             unsigned long timeout = timeout_ms <= 0 ? 0 : (unsigned long)timeout_ms;
 
-            if (!(timeout > 0))
+            if (0 == timeout) {
                 event_loop(*wnd, event);
+
+                if (event.type == sf::Event::Resized) {
+                    window_->OnResize(event.size.width, event.size.height);
+                }
+            }
 
             timeout_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                              next_paint - std::chrono::steady_clock::now())
@@ -65,6 +68,7 @@ void lsApp::Run() {
             renderer_->Update();
 
             if (timeout_ms <= 0) {
+                renderer_->RefreshDisplay(0);
                 renderer_->Render();
 
                 Draw();
@@ -76,23 +80,35 @@ void lsApp::Run() {
 }
 
 void lsApp::Draw() {
-    if (!done_)
+
+    Surface *surface = view_->surface();
+    if (surface->dirty_bounds().IsEmpty())
         return;
 
     // 绘制ultralight渲染的html
-    BitmapSurface *bitmap_surface = (BitmapSurface *)view_->surface();
-    RefPtr<Bitmap> bitmap = bitmap_surface->bitmap();
+    RefPtr<Bitmap> bitmap = static_cast<BitmapSurface*>(surface)->bitmap();
+    surface->ClearDirtyBounds();
 
-    static int si = 0;
-    if (0 == si++) {
-        bitmap->WritePNG("../x64/Debug/result.png");// WritePNG也不能lock
-    } else {
-        si = 2;
-    }
+    // static int si = 0;
+    // if (0 == si++) {
+    //     bitmap->WritePNG("../x64/Debug/result.png");// WritePNG也不能lock
+    // } else {
+    //     si = 2;
+    // }
 
     // void *pixels = bitmap->LockPixels();// EncodePNG不能用这个lock
 
     RefPtr<Buffer> buffer = bitmap->EncodePNG();// 最新版sdk才有这个接口
+
+    if (0)
+    {
+        bitmap->WritePNG("../x64/Debug/result.png");
+    }
+
+    uint32_t vw = view_->width();
+    uint32_t vh = view_->height();
+    uint32_t ww = window_->width();
+    uint32_t wh = window_->height();
 
 
     // 创建纹理加载位图
@@ -108,6 +124,14 @@ void lsApp::Draw() {
     sf::Sprite sprite;
     sprite.setTexture(texture);
 
+    sf::Vector2u windowSize = window_->get_handle()->getSize();
+    sf::Vector2u bitmapSize = texture.getSize();
+    float scaleX = static_cast<float>(windowSize.x) / bitmapSize.x;
+    float scaleY = static_cast<float>(windowSize.y) / bitmapSize.y;
+    sprite.setScale(scaleX, scaleY);
+
+    window_->get_handle()->clear();
+
     // 绘制精灵
     window_->get_handle()->draw(sprite);
 
@@ -115,6 +139,9 @@ void lsApp::Draw() {
 }
 
 void lsApp::OnFinishLoading(ultralight::View *caller, uint64_t frame_id, bool is_main_frame, const String &url) {
-    if (is_main_frame)
-        done_ = true;
+}
+
+void lsApp::OnResize(uint32_t width, uint32_t height) {
+    view_->Resize(width, height);
+    view_->set_needs_paint(true);
 }

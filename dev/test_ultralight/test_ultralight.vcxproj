@@ -143,11 +143,13 @@ if %errorlevel% leq 4 exit 0 else exit %errorlevel%</Command>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="lsApp.cpp" />
+    <ClCompile Include="lsGame.cpp" />
     <ClCompile Include="lsWindow.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="lsApp.h" />
+    <ClInclude Include="lsGame.h" />
     <ClInclude Include="lsWindow.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
