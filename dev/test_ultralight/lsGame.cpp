@@ -1,10 +1,27 @@
 ﻿#include "lsGame.h"
 
-lsGame::lsGame() :
-    m_window(sf::VideoMode(800, 600), "demo"), m_shape() {
-    m_shape.setRadius(40.0f);
-    m_shape.setPosition(100.0f, 100.0f);
-    m_shape.setFillColor(sf::Color::Red);
+#include <iostream>
+
+lsGame::lsGame()
+    : m_window(sf::VideoMode(800, 600), "demo")
+    , m_texture()
+    , m_sprite()
+    , m_font()
+    , m_text() {
+    
+    if (!m_texture.loadFromFile("../x64/Debug/supermarie.png")) {
+        std::cout << "load texture failed" << std::endl;
+    }
+
+    if (!m_font.loadFromFile("../x64/Debug/FiraCode-Regular.ttf")) {
+        std::cout << "load font failed" << std::endl;
+    }
+
+    m_text.setFont(m_font);
+    m_text.setPosition(10.f, 10.f);
+
+    m_sprite.setTexture(m_texture);
+    m_sprite.setPosition(m_window.getSize().x / 2.f, m_window.getSize().y / 2.f);
 
     m_timePerFrame = sf::seconds(1.f / 60.f);// 每秒60帧
     m_fMoveSpeed = 240.0f;
@@ -13,12 +30,26 @@ lsGame::lsGame() :
 void lsGame::run() {
     sf::Clock clock;
     sf::Time timeSinceLastUpdate = sf::Time::Zero;
+    sf::Time timeoutFps = sf::Time::Zero;
+    int frameCount = 0;
     while (m_window.isOpen()) {
+        frameCount++;
+
         processEvents();
 
         // 叠加上个循环的耗时，看看此时间间隔要更新多少帧
-        timeSinceLastUpdate += clock.restart();
-        while (timeSinceLastUpdate > m_timePerFrame)  
+        sf::Time deltaTime = clock.restart();
+        timeSinceLastUpdate += deltaTime;
+        timeoutFps += deltaTime;
+
+        if (timeoutFps > sf::seconds(0.1f)) {
+            // 每秒更新一次fps
+            m_fps = frameCount / timeoutFps.asSeconds();
+            frameCount = 0;
+            timeoutFps = sf::Time::Zero;
+        }
+
+        while (timeSinceLastUpdate > m_timePerFrame)
         {
             timeSinceLastUpdate -= m_timePerFrame;
             processEvents();
@@ -62,12 +93,19 @@ void lsGame::update(sf::Time deltaTime) {
 
     // 位移等于速度*时间
     movement *= deltaTime.asSeconds();
-    m_shape.move(movement);
+    m_sprite.move(movement);
 }
 
 void lsGame::render() {
     m_window.clear();
-    m_window.draw(m_shape);
+
+    m_window.draw(m_sprite);
+
+    // fps转字符串时只保留整数部分
+    sf::String fpsString = "FPS: " + std::to_string(static_cast<int>(m_fps));
+    m_text.setString(fpsString);
+    m_window.draw(m_text);
+
     m_window.display();
 }
 

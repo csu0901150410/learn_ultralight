@@ -16,7 +16,9 @@ private:
 
 private:
     sf::RenderWindow m_window;
-    sf::CircleShape m_shape;
+
+    sf::Texture m_texture;
+    sf::Sprite m_sprite;
 
     bool m_bMoveUp = false;
     bool m_bMoveDown = false;
@@ -25,4 +27,8 @@ private:
 
     float m_fMoveSpeed;// 移动速度
     sf::Time m_timePerFrame;// 每一帧的时间
+
+    sf::Font m_font;
+    sf::Text m_text;
+    float m_fps;
 };
