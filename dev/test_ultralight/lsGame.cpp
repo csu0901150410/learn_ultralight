@@ -5,16 +5,27 @@ lsGame::lsGame() :
     m_shape.setRadius(40.0f);
     m_shape.setPosition(100.0f, 100.0f);
     m_shape.setFillColor(sf::Color::Red);
+
+    m_timePerFrame = sf::seconds(1.f / 60.f);// 每秒60帧
+    m_fMoveSpeed = 240.0f;
 }
 
 void lsGame::run() {
+    sf::Clock clock;
+    sf::Time timeSinceLastUpdate = sf::Time::Zero;
     while (m_window.isOpen()) {
         processEvents();
-        update();
-        render();
 
-        // 延时
-        sf::sleep(sf::milliseconds(100));
+        // 叠加上个循环的耗时，看看此时间间隔要更新多少帧
+        timeSinceLastUpdate += clock.restart();
+        while (timeSinceLastUpdate > m_timePerFrame)  
+        {
+            timeSinceLastUpdate -= m_timePerFrame;
+            processEvents();
+            update(m_timePerFrame);
+        }
+
+        render();
     }
 }
 
@@ -37,18 +48,21 @@ void lsGame::processEvents() {
     }
 }
 
-void lsGame::update() {
+void lsGame::update(sf::Time deltaTime) {
     sf::Vector2f movement(0.0f, 0.0f);
+    float speed = m_fMoveSpeed;
     if (m_bMoveUp)
-        movement.y -= 1.0f;
+        movement.y -= speed;
     if (m_bMoveDown)
-        movement.y += 1.0f;
+        movement.y += speed;
     if (m_bMoveLeft)
-        movement.x -= 1.0f;
+        movement.x -= speed;
     if (m_bMoveRight)
-        movement.x += 1.0f;
+        movement.x += speed;
 
-    m_shape.move(movement * 5.0f);
+    // 位移等于速度*时间
+    movement *= deltaTime.asSeconds();
+    m_shape.move(movement);
 }
 
 void lsGame::render() {
