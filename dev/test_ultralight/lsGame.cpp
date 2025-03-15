@@ -4,22 +4,19 @@
 
 lsGame::lsGame()
     : m_window(sf::VideoMode(800, 600), "demo")
-    , m_texture()
+    , m_textures()
     , m_sprite()
-    , m_font()
+    , m_fonts()
     , m_text() {
     
-    m_texture.load(lsTextures::Player, "../x64/Debug/supermarie.png");
+    m_textures.load(lsResource::TextureID::kMarie, "../x64/Debug/supermarie.png");
+    m_fonts.load(lsResource::FontID::kFiraCode, "../x64/Debug/FiraCode-Regular.ttf");
 
-    if (!m_font.loadFromFile("../x64/Debug/FiraCode-Regular.ttf")) {
-        std::cout << "load font failed" << std::endl;
-    }
-
-    m_text.setFont(m_font);
-    m_text.setPosition(10.f, 10.f);
-
-    m_sprite.setTexture(m_texture.get(lsTextures::Player));
+    m_sprite.setTexture(m_textures.get(lsResource::TextureID::kMarie));
     m_sprite.setPosition(m_window.getSize().x / 2.f, m_window.getSize().y / 2.f);
+
+    m_text.setFont(m_fonts.get(lsResource::FontID::kFiraCode));
+    m_text.setPosition(10.f, 10.f);
 
     m_timePerFrame = sf::seconds(1.f / 60.f);// 每秒60帧
     m_fMoveSpeed = 240.0f;

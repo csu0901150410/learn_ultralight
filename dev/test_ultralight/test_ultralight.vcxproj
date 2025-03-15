@@ -144,15 +144,17 @@ if %errorlevel% leq 4 exit 0 else exit %errorlevel%</Command>
   <ItemGroup>
     <ClCompile Include="lsApp.cpp" />
     <ClCompile Include="lsGame.cpp" />
-    <ClCompile Include="lsTextureHolder.cpp" />
     <ClCompile Include="lsWindow.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="lsApp.h" />
     <ClInclude Include="lsGame.h" />
-    <ClInclude Include="lsTextureHolder.h" />
+    <ClInclude Include="lsResourceHolder.hpp" />
     <ClInclude Include="lsWindow.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="lsResourceHolder.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

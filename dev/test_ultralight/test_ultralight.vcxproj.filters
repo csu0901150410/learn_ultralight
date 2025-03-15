@@ -27,9 +27,6 @@
     <ClCompile Include="lsGame.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="lsTextureHolder.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="lsApp.h">
@@ -41,8 +38,13 @@
     <ClInclude Include="lsGame.h">
       <Filter>源文件</Filter>
     </ClInclude>
-    <ClInclude Include="lsTextureHolder.h">
+    <ClInclude Include="lsResourceHolder.hpp">
       <Filter>源文件</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="lsResourceHolder.inl">
+      <Filter>源文件</Filter>
+    </None>
   </ItemGroup>
 </Project>
