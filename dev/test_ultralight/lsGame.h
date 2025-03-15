@@ -2,6 +2,8 @@
 
 #include <SFML/Graphics.hpp>
 
+#include "lsTextureHolder.h"
+
 class lsGame {
 public:
     lsGame();
@@ -17,7 +19,7 @@ private:
 private:
     sf::RenderWindow m_window;
 
-    sf::Texture m_texture;
+    lsTextureHolder m_texture;// 管理所有纹理
     sf::Sprite m_sprite;
 
     bool m_bMoveUp = false;

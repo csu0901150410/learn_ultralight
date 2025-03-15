@@ -9,9 +9,7 @@ lsGame::lsGame()
     , m_font()
     , m_text() {
     
-    if (!m_texture.loadFromFile("../x64/Debug/supermarie.png")) {
-        std::cout << "load texture failed" << std::endl;
-    }
+    m_texture.load(lsTextures::Player, "../x64/Debug/supermarie.png");
 
     if (!m_font.loadFromFile("../x64/Debug/FiraCode-Regular.ttf")) {
         std::cout << "load font failed" << std::endl;
@@ -20,7 +18,7 @@ lsGame::lsGame()
     m_text.setFont(m_font);
     m_text.setPosition(10.f, 10.f);
 
-    m_sprite.setTexture(m_texture);
+    m_sprite.setTexture(m_texture.get(lsTextures::Player));
     m_sprite.setPosition(m_window.getSize().x / 2.f, m_window.getSize().y / 2.f);
 
     m_timePerFrame = sf::seconds(1.f / 60.f);// 每秒60帧
