@@ -22,14 +22,18 @@ lsApp::lsApp() {
     view_->set_view_listener(this);
     view_->set_load_listener(this);
 
-    // 用opencv加载图片
-    cv::Mat mat = cv::imread("../x64/Debug/supermarie.png");
-    cv::cvtColor(mat, rgbmat_, cv::COLOR_BGR2RGBA);
+    // // 用opencv加载图片
+    // cv::Mat mat = cv::imread("../x64/Debug/supermarie.png");
+    // cv::cvtColor(mat, rgbmat_, cv::COLOR_BGR2RGBA);
+
+    camera_.release();
+    camera_.open(0);
 }
 
 lsApp::~lsApp() {
     view_ = nullptr;
     renderer_ = nullptr;
+    camera_.release();
 }
 
 void lsApp::event_loop(sf::RenderWindow &window, const sf::Event &event) {
@@ -78,6 +82,11 @@ void lsApp::Run() {
             renderer_->RefreshDisplay(0);
             renderer_->Render();
 
+            if (camera_.isOpened()) {
+                camera_ >> rgbmat_;
+                cv::cvtColor(rgbmat_, rgbmat_, cv::COLOR_BGR2RGBA);
+            }
+
             Draw();
 
             next_paint = std::chrono::steady_clock::now() + interval_ms;
@@ -86,64 +95,25 @@ void lsApp::Run() {
 }
 
 void lsApp::Draw() {
+    sf::Sprite gui_sprite, canvas_sprite;
 
     Surface *surface = view_->surface();
-    if (surface->dirty_bounds().IsEmpty())
-        return;
+    if (!surface->dirty_bounds().IsEmpty()) {
+        // 绘制ultralight渲染的html
+        RefPtr<Bitmap> bitmap = static_cast<BitmapSurface*>(surface)->bitmap();
+        surface->ClearDirtyBounds();
 
-    // 绘制ultralight渲染的html
-    RefPtr<Bitmap> bitmap = static_cast<BitmapSurface*>(surface)->bitmap();
-    surface->ClearDirtyBounds();
-
-    // static int si = 0;
-    // if (0 == si++) {
-    //     bitmap->WritePNG("../x64/Debug/result.png");// WritePNG也不能lock
-    // } else {
-    //     si = 2;
-    // }
-
-    // void *pixels = bitmap->LockPixels();// EncodePNG不能用这个lock
-
-    RefPtr<Buffer> buffer = bitmap->EncodePNG();// 最新版sdk才有这个接口
-
-    if (0)
-    {
-        bitmap->WritePNG("../x64/Debug/result.png");
+        gui_buffer_ = bitmap->EncodePNG();// 最新版sdk才有这个接口
     }
 
-    uint32_t vw = view_->width();
-    uint32_t vh = view_->height();
-    uint32_t ww = window_->width();
-    uint32_t wh = window_->height();
-
-
-    // 创建纹理加载位图
     sf::Texture texture;
-    texture.loadFromMemory(buffer->data(), buffer->size());
-    // texture.loadFromMemory(pixels, bitmap->size());
-
-    // texture.loadFromFile("../x64/Debug/result.png");
-
-    // bitmap->UnlockPixels();
-
-    // 创建精灵绑定纹理
-    sf::Sprite sprite;
-    sprite.setTexture(texture);
-
-    sf::Vector2u windowSize = window_->get_handle()->getSize();
-    sf::Vector2u bitmapSize = texture.getSize();
-    float scaleX = static_cast<float>(windowSize.x) / bitmapSize.x;
-    float scaleY = static_cast<float>(windowSize.y) / bitmapSize.y;
-    sprite.setScale(scaleX, scaleY);
+    texture.loadFromMemory(gui_buffer_->data(), gui_buffer_->size());
+    gui_sprite.setTexture(texture);
 
     window_->get_handle()->clear();
 
-    // 绘制ultralight图像
-    window_->get_handle()->draw(sprite);
-
     // 绘制opencv图像
     sf::Texture cvtexture;
-    sf::Sprite cvsprite;
 
     // sf::Image image;
     // image.create(rgbmat_.cols, rgbmat_.rows, rgbmat_.ptr());
@@ -152,9 +122,14 @@ void lsApp::Draw() {
     cvtexture.create(rgbmat_.cols, rgbmat_.rows);
     cvtexture.update(rgbmat_.data);
 
-    cvsprite.setTexture(cvtexture);
-    cvsprite.move(sf::Vector2f(100.f, 100.f));
-    window_->get_handle()->draw(cvsprite);
+    canvas_sprite.setTexture(cvtexture);
+    canvas_sprite.move(sf::Vector2f(300.f, 0.f));
+
+    // 绘制ultralight图像
+    window_->get_handle()->draw(gui_sprite);
+
+    // 绘制opencv图像
+    window_->get_handle()->draw(canvas_sprite);
 
     window_->PresentFrame();
 }

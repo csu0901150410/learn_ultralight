@@ -118,6 +118,7 @@ xcopy "$(CPP_LIBS)\SFML2\bin\sfml-system-d-2.dll" "$(TargetDir)" /D /Y
 xcopy "$(CPP_LIBS)\SFML2\bin\sfml-graphics-d-2.dll" "$(TargetDir)" /D /Y
 
 xcopy "$(CPP_LIBS)\opencv\build\x64\vc16\bin\opencv_world490d.dll" "$(TargetDir)" /D /Y
+xcopy "$(CPP_LIBS)\opencv\build\bin\opencv_videoio_ffmpeg490_64.dll" "$(TargetDir)" /D /Y
 
 xcopy "$(CPP_LIBS)\ultralight\bin\*.dll" "$(TargetDir)" /D /Y
 xcopy "$(CPP_LIBS)\ultralight\resources" "$(TargetDir)\assets\resources" /D /Y /I

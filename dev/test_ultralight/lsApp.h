@@ -34,4 +34,8 @@ protected:
     RefPtr<View> view_;
 
     cv::Mat rgbmat_;
+
+    RefPtr<Buffer> gui_buffer_;
+
+    cv::VideoCapture camera_;
 };
