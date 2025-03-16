@@ -28,11 +28,18 @@ lsApp::~lsApp() {
     renderer_ = nullptr;
 }
 
-void event_loop(sf::RenderWindow &window, const sf::Event &event) {
+void lsApp::event_loop(sf::RenderWindow &window, const sf::Event &event) {
     switch (event.type) {
     case sf::Event::Closed:
         window.close();
-        break;
+    break;
+
+    case sf::Event::Resized:
+    {
+        sf::View view(sf::FloatRect(0, 0, (float)event.size.width, (float)event.size.height));
+        window_->get_handle()->setView(view);
+    }
+    break;
 
     default:
         break;

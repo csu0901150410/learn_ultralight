@@ -20,6 +20,9 @@ public:
 
     virtual void OnResize(uint32_t width, uint32_t height) override;
 
+private:
+    void event_loop(sf::RenderWindow &window, const sf::Event &event);
+
 protected:
     std::unique_ptr<lsWindow> window_;// 主窗口
     int width_;
