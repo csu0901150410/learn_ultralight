@@ -2,6 +2,8 @@
 
 #include <AppCore/AppCore.h>
 
+#include <opencv2/opencv.hpp>
+
 #include "lsWindow.h"
 
 using namespace ultralight;
@@ -30,4 +32,6 @@ protected:
 
     RefPtr<Renderer> renderer_;
     RefPtr<View> view_;
+
+    cv::Mat rgbmat_;
 };

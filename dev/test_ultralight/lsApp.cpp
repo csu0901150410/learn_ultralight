@@ -21,6 +21,10 @@ lsApp::lsApp() {
     view_->LoadURL("file:///page.html");
     view_->set_view_listener(this);
     view_->set_load_listener(this);
+
+    // 用opencv加载图片
+    cv::Mat mat = cv::imread("../x64/Debug/supermarie.png");
+    cv::cvtColor(mat, rgbmat_, cv::COLOR_BGR2RGBA);
 }
 
 lsApp::~lsApp() {
@@ -134,8 +138,23 @@ void lsApp::Draw() {
 
     window_->get_handle()->clear();
 
-    // 绘制精灵
+    // 绘制ultralight图像
     window_->get_handle()->draw(sprite);
+
+    // 绘制opencv图像
+    sf::Texture cvtexture;
+    sf::Sprite cvsprite;
+
+    // sf::Image image;
+    // image.create(rgbmat_.cols, rgbmat_.rows, rgbmat_.ptr());
+    // cvtexture.loadFromImage(image);
+
+    cvtexture.create(rgbmat_.cols, rgbmat_.rows);
+    cvtexture.update(rgbmat_.data);
+
+    cvsprite.setTexture(cvtexture);
+    cvsprite.move(sf::Vector2f(100.f, 100.f));
+    window_->get_handle()->draw(cvsprite);
 
     window_->PresentFrame();
 }
