@@ -4,10 +4,13 @@
 
 lsGame::lsGame()
     : m_window(sf::VideoMode(800, 600), "demo")
+    , m_view(sf::View(sf::FloatRect(0.f, 0.f, 800.f, 600.f)))
     , m_textures()
     , m_sprite()
     , m_fonts()
     , m_text() {
+
+    m_window.setView(m_view);
     
     m_textures.load(lsResource::TextureID::kMarie, "../x64/Debug/supermarie.png");
     m_fonts.load(lsResource::FontID::kFiraCode, "../x64/Debug/FiraCode-Regular.ttf");
@@ -61,15 +64,32 @@ void lsGame::processEvents() {
         switch (event.type) {
         case sf::Event::KeyPressed:
             handlePlayerInput(event.key.code, true);
-            break;
+        break;
 
         case sf::Event::KeyReleased:
             handlePlayerInput(event.key.code, false);
-            break;
+        break;
+
+        case sf::Event::Resized:
+        {
+            // 计算精灵相对视图原点的位置
+            float relx = m_sprite.getPosition().x / m_view.getSize().x;
+            float rely = m_sprite.getPosition().y / m_view.getSize().y;
+
+            // 更新视图的区域
+            float rotation = m_view.getRotation();
+            m_view.reset(sf::FloatRect(0, 0, (float)event.size.width, (float)event.size.height));
+            m_view.setRotation(rotation);
+            m_window.setView(m_view);
+
+            // 更新精灵位置
+            m_sprite.setPosition(m_view.getSize().x * relx, m_view.getSize().y * rely);
+        }
+        break;
 
         case sf::Event::Closed:
             m_window.close();
-            break;
+        break;
         }
     }
 }

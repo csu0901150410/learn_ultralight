@@ -28,6 +28,7 @@ private:
 
 private:
     sf::RenderWindow m_window;
+    sf::View m_view;
 
     lsResourceHolder<sf::Texture, lsResource::TextureID> m_textures;
     lsResourceHolder<sf::Font, lsResource::FontID> m_fonts;
