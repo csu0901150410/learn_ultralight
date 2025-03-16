@@ -36,8 +36,7 @@ void lsApp::event_loop(sf::RenderWindow &window, const sf::Event &event) {
 
     case sf::Event::Resized:
     {
-        sf::View view(sf::FloatRect(0, 0, (float)event.size.width, (float)event.size.height));
-        window_->get_handle()->setView(view);
+        window_->OnResize(event.size.width, event.size.height);
     }
     break;
 
@@ -53,35 +52,31 @@ void lsApp::Run() {
     std::chrono::steady_clock::time_point next_paint = std::chrono::steady_clock::now();
 
     while (wnd->isOpen()) {
+        long long timeout_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+            next_paint - std::chrono::steady_clock::now())
+            .count();
+        unsigned long timeout = timeout_ms <= 0 ? 0 : (unsigned long)timeout_ms;
+
+        // 轮询事件
         sf::Event event;
         while (wnd->pollEvent(event)) {
-            long long timeout_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                                       next_paint - std::chrono::steady_clock::now())
-                                       .count();
-            unsigned long timeout = timeout_ms <= 0 ? 0 : (unsigned long)timeout_ms;
+            event_loop(*wnd, event);
+        }
 
-            if (0 == timeout) {
-                event_loop(*wnd, event);
+        // 更新应用逻辑
+        renderer_->Update();
 
-                if (event.type == sf::Event::Resized) {
-                    window_->OnResize(event.size.width, event.size.height);
-                }
-            }
+        // 时间间隔到则渲染
+        timeout_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+            next_paint - std::chrono::steady_clock::now())
+            .count();
+        if (timeout_ms <= 0) {
+            renderer_->RefreshDisplay(0);
+            renderer_->Render();
 
-            timeout_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                             next_paint - std::chrono::steady_clock::now())
-                             .count();
+            Draw();
 
-            renderer_->Update();
-
-            if (timeout_ms <= 0) {
-                renderer_->RefreshDisplay(0);
-                renderer_->Render();
-
-                Draw();
-
-                next_paint = std::chrono::steady_clock::now() + interval_ms;
-            }
+            next_paint = std::chrono::steady_clock::now() + interval_ms;
         }
     }
 }
@@ -149,6 +144,11 @@ void lsApp::OnFinishLoading(ultralight::View *caller, uint64_t frame_id, bool is
 }
 
 void lsApp::OnResize(uint32_t width, uint32_t height) {
+    // 更新ultralight的view
     view_->Resize(width, height);
     view_->set_needs_paint(true);
+
+    // 更新sfml的view，使得sprite不拉伸
+    sf::View sfview(sf::FloatRect(0, 0, (float)width, (float)height));
+    window_->get_handle()->setView(sfview);
 }
