@@ -14,16 +14,16 @@ public:
     lsApp();
     ~lsApp();
 
-    void Run();
-
-    void Draw();
+    void run();
 
     virtual void OnFinishLoading(ultralight::View* caller, uint64_t frame_id, bool is_main_frame, const String& url) override;
 
     virtual void OnResize(uint32_t width, uint32_t height) override;
 
 private:
-    void event_loop(sf::RenderWindow &window, const sf::Event &event);
+    void processEvents();
+    void update(sf::Time deltaTime);
+    void render();
 
 protected:
     std::unique_ptr<lsWindow> window_;// 主窗口
@@ -43,4 +43,6 @@ protected:
     std::unique_ptr<sf::Sprite> canvas_sprite_;
 
     cv::VideoCapture camera_;
+
+    sf::Time time_per_frame_;
 };

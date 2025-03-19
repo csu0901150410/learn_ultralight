@@ -35,6 +35,8 @@ lsApp::lsApp()
 
     camera_.release();
     camera_.open(0);
+
+    time_per_frame_ = sf::seconds(1.0f / 60.0f);
 }
 
 lsApp::~lsApp() {
@@ -51,90 +53,36 @@ lsApp::~lsApp() {
     camera_.release();
 }
 
-void lsApp::event_loop(sf::RenderWindow &window, const sf::Event &event) {
-    switch (event.type) {
-    case sf::Event::Closed:
-        window.close();
-    break;
-
-    case sf::Event::Resized:
-    {
-        window_->OnResize(event.size.width, event.size.height);
-    }
-    break;
-
-    default:
-        break;
-    }
-}
-
-void lsApp::Run() {
+void lsApp::run() {
     sf::RenderWindow *wnd = window_->get_handle();
 
-    std::chrono::milliseconds interval_ms(4);
-    std::chrono::steady_clock::time_point next_paint = std::chrono::steady_clock::now();
+    sf::Clock clock;
+    sf::Time timeSinceLastUpdate = sf::Time::Zero;
+    sf::Time timeoutFps = sf::Time::Zero;
 
     while (wnd->isOpen()) {
-        long long timeout_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-            next_paint - std::chrono::steady_clock::now())
-            .count();
-        unsigned long timeout = timeout_ms <= 0 ? 0 : (unsigned long)timeout_ms;
+        processEvents();
 
-        // 轮询事件
-        sf::Event event;
-        while (wnd->pollEvent(event)) {
-            event_loop(*wnd, event);
+        // 叠加上个循环的耗时，看看此时间间隔要更新多少帧
+        sf::Time deltaTime = clock.restart();
+        timeSinceLastUpdate += deltaTime;
+
+        while (timeSinceLastUpdate > time_per_frame_) {
+            timeSinceLastUpdate -= time_per_frame_;
+            processEvents();
+            update(time_per_frame_);
         }
 
-        // 更新应用逻辑
-        renderer_->Update();
-
-        // 时间间隔到则渲染
-        timeout_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-            next_paint - std::chrono::steady_clock::now())
-            .count();
-        if (timeout_ms <= 0) {
-            renderer_->RefreshDisplay(0);
-            renderer_->Render();
-
-            if (camera_.isOpened()) {
-                camera_ >> rgbmat_;
-                cv::cvtColor(rgbmat_, rgbmat_, cv::COLOR_BGR2RGBA);
-            }
-
-            Draw();
-
-            next_paint = std::chrono::steady_clock::now() + interval_ms;
-        }
+        render();
     }
-}
-
-void lsApp::Draw() {
-    Surface *surface = view_->surface();
-    if (!surface->dirty_bounds().IsEmpty()) {
-        // 绘制ultralight渲染的html
-        RefPtr<Bitmap> bitmap = static_cast<BitmapSurface*>(surface)->bitmap();
-        surface->ClearDirtyBounds();
-
-        gui_buffer_ = bitmap->EncodePNG();// 最新版sdk才有这个接口
-    }
-
-    gui_texture_->loadFromMemory(gui_buffer_->data(), gui_buffer_->size());
-    gui_sprite_->setTexture(*gui_texture_.get(), true);
-
-    canvas_texture_->create(rgbmat_.cols, rgbmat_.rows);
-    canvas_texture_->update(rgbmat_.data);
-    canvas_sprite_->setTexture(*canvas_texture_.get(), true);
-
-    window_->get_handle()->clear();
-
-    window_->get_handle()->draw(*gui_sprite_.get());
-    window_->get_handle()->draw(*canvas_sprite_.get());
-
-    window_->PresentFrame();
 }
 
 void lsApp::OnFinishLoading(ultralight::View *caller, uint64_t frame_id, bool is_main_frame, const String &url) {
+    if (is_main_frame) {
+        // 这里打断点，先执行render才到这里加载完毕，会导致渲染时gui位图还没准备好
+        // 加载完成也不等于渲染完成，所以render还是要判断gui_buffer_
+        int a = 100;
+    }
 }
 
 void lsApp::OnResize(uint32_t width, uint32_t height) {
@@ -145,4 +93,70 @@ void lsApp::OnResize(uint32_t width, uint32_t height) {
     // 更新sfml的view，使得sprite不拉伸
     sf::View sfview(sf::FloatRect(0, 0, (float)width, (float)height));
     window_->get_handle()->setView(sfview);
+}
+
+void lsApp::processEvents() {
+    sf::Event event;
+    while (window_->get_handle()->pollEvent(event)) {
+        switch (event.type) {
+        case sf::Event::Closed:
+        {
+            window_->get_handle()->close();
+        }
+        break;
+
+        case sf::Event::Resized:
+        {
+            window_->OnResize(event.size.width, event.size.height);
+        }
+        break;
+        }
+    }
+}
+
+void lsApp::update(sf::Time deltaTime) {
+    // 应用更新逻辑
+
+    // ultralight更新
+    renderer_->Update();
+}
+
+void lsApp::render() {
+    // ultralight渲染
+    renderer_->RefreshDisplay(0);
+    renderer_->Render();
+
+    Surface *surface = view_->surface();
+    if (!surface->dirty_bounds().IsEmpty()) {
+        // 绘制ultralight渲染的html
+        RefPtr<Bitmap> bitmap = static_cast<BitmapSurface*>(surface)->bitmap();
+        surface->ClearDirtyBounds();
+
+        gui_buffer_ = bitmap->EncodePNG();// 最新版sdk才有这个接口
+    }
+
+    if (camera_.isOpened()) {
+        camera_ >> rgbmat_;
+        cv::cvtColor(rgbmat_, rgbmat_, cv::COLOR_BGR2RGBA);
+    }
+
+    if (gui_buffer_.get() == nullptr) {
+        return;// 要等ui渲染完毕
+    }
+
+    if (rgbmat_.empty()) {
+        return;
+    }
+
+    gui_texture_->loadFromMemory(gui_buffer_->data(), gui_buffer_->size());
+    gui_sprite_->setTexture(*gui_texture_.get(), true);
+
+    canvas_texture_->create(rgbmat_.cols, rgbmat_.rows);
+    canvas_texture_->update(rgbmat_.data);
+    canvas_sprite_->setTexture(*canvas_texture_.get(), true);
+
+    window_->get_handle()->clear();
+    window_->get_handle()->draw(*gui_sprite_.get());
+    window_->get_handle()->draw(*canvas_sprite_.get());
+    window_->get_handle()->display();
 }

@@ -2,7 +2,7 @@
 
 int main() {
     lsApp app;
-    app.Run();
+    app.run();
     return 0;
 }
 
