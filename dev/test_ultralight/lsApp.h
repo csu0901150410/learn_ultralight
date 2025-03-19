@@ -37,5 +37,10 @@ protected:
 
     RefPtr<Buffer> gui_buffer_;
 
+    std::unique_ptr<sf::Texture> gui_texture_;
+    std::unique_ptr<sf::Texture> canvas_texture_;
+    std::unique_ptr<sf::Sprite> gui_sprite_;
+    std::unique_ptr<sf::Sprite> canvas_sprite_;
+
     cv::VideoCapture camera_;
 };

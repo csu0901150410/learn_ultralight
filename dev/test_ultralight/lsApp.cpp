@@ -2,7 +2,14 @@
 
 #include <chrono>
 
-lsApp::lsApp() {
+lsApp::lsApp() 
+    : gui_texture_(new sf::Texture())
+    , canvas_texture_(new sf::Texture()) 
+    , gui_sprite_(new sf::Sprite())
+    , canvas_sprite_(new sf::Sprite()) {
+
+    canvas_sprite_->move(sf::Vector2f(300.f, 0.f));
+    
     window_.reset(new lsWindow(800, 600));
     window_->set_listener(this); // app监听主窗口
     width_ = window_->width();
@@ -33,6 +40,14 @@ lsApp::lsApp() {
 lsApp::~lsApp() {
     view_ = nullptr;
     renderer_ = nullptr;
+
+    gui_buffer_ = nullptr;
+
+    gui_texture_ = nullptr;
+    gui_sprite_ = nullptr;
+    canvas_texture_ = nullptr;
+    canvas_sprite_ = nullptr;
+
     camera_.release();
 }
 
@@ -95,8 +110,6 @@ void lsApp::Run() {
 }
 
 void lsApp::Draw() {
-    sf::Sprite gui_sprite, canvas_sprite;
-
     Surface *surface = view_->surface();
     if (!surface->dirty_bounds().IsEmpty()) {
         // 绘制ultralight渲染的html
@@ -106,30 +119,17 @@ void lsApp::Draw() {
         gui_buffer_ = bitmap->EncodePNG();// 最新版sdk才有这个接口
     }
 
-    sf::Texture texture;
-    texture.loadFromMemory(gui_buffer_->data(), gui_buffer_->size());
-    gui_sprite.setTexture(texture);
+    gui_texture_->loadFromMemory(gui_buffer_->data(), gui_buffer_->size());
+    gui_sprite_->setTexture(*gui_texture_.get(), true);
+
+    canvas_texture_->create(rgbmat_.cols, rgbmat_.rows);
+    canvas_texture_->update(rgbmat_.data);
+    canvas_sprite_->setTexture(*canvas_texture_.get(), true);
 
     window_->get_handle()->clear();
 
-    // 绘制opencv图像
-    sf::Texture cvtexture;
-
-    // sf::Image image;
-    // image.create(rgbmat_.cols, rgbmat_.rows, rgbmat_.ptr());
-    // cvtexture.loadFromImage(image);
-
-    cvtexture.create(rgbmat_.cols, rgbmat_.rows);
-    cvtexture.update(rgbmat_.data);
-
-    canvas_sprite.setTexture(cvtexture);
-    canvas_sprite.move(sf::Vector2f(300.f, 0.f));
-
-    // 绘制ultralight图像
-    window_->get_handle()->draw(gui_sprite);
-
-    // 绘制opencv图像
-    window_->get_handle()->draw(canvas_sprite);
+    window_->get_handle()->draw(*gui_sprite_.get());
+    window_->get_handle()->draw(*canvas_sprite_.get());
 
     window_->PresentFrame();
 }
