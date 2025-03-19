@@ -158,5 +158,25 @@ void lsApp::render() {
     window_->get_handle()->clear();
     window_->get_handle()->draw(*gui_sprite_.get());
     window_->get_handle()->draw(*canvas_sprite_.get());
+
+    // 对采集到的帧进行处理
+    processCvFrame();
+
     window_->get_handle()->display();
+}
+
+void lsApp::processCvFrame() {
+    // 来点灰度，sfml需要四通道，最后要转回
+    cv::Mat grayFrame = rgbmat_.clone();
+    cv::cvtColor(grayFrame, grayFrame, cv::COLOR_RGBA2GRAY);
+    cv::cvtColor(grayFrame, grayFrame, cv::COLOR_GRAY2BGRA);
+
+    sf::Texture texture;
+    sf::Sprite sprite;
+    texture.create(grayFrame.cols, grayFrame.rows);
+    texture.update(grayFrame.data);
+    sprite.setTexture(texture);
+    sprite.move(sf::Vector2f(300.f, 500.f));
+
+    window_->get_handle()->draw(sprite);
 }

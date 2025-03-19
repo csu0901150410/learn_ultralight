@@ -25,6 +25,8 @@ private:
     void update(sf::Time deltaTime);
     void render();
 
+    void processCvFrame();
+
 protected:
     std::unique_ptr<lsWindow> window_;// 主窗口
     int width_;
