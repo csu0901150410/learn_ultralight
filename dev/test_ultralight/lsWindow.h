@@ -16,7 +16,7 @@ public:
     virtual void OnResize(uint32_t width, uint32_t height) = 0;
     // virtual void OnChangeFocus(bool focused) = 0;
     // virtual void OnKeyEvent(const KeyEvent& evt) = 0;
-    // virtual void OnMouseEvent(const MouseEvent& evt) = 0;
+    virtual void OnMouseEvent(const ultralight::MouseEvent& evt) = 0;
     // virtual void OnScrollEvent(const ScrollEvent& evt) = 0;
 };
 
@@ -39,6 +39,8 @@ public:
     sf::RenderWindow *get_handle() { return window_; }
 
     void OnResize(uint32_t width, uint32_t height);
+
+    void OnMouseEvent(const sf::Event &event);
 
 protected:
     sf::RenderWindow *window_;// sfml窗口

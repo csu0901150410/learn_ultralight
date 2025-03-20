@@ -95,19 +95,34 @@ void lsApp::OnResize(uint32_t width, uint32_t height) {
     window_->get_handle()->setView(sfview);
 }
 
+void lsApp::OnMouseEvent(const ultralight::MouseEvent &event) {
+    // sfml窗口过来的事件传递给ultralight的view
+    view_->FireMouseEvent(event);
+}
+
 void lsApp::processEvents() {
     sf::Event event;
     while (window_->get_handle()->pollEvent(event)) {
         switch (event.type) {
-        case sf::Event::Closed:
+        case sf::Event::EventType::Closed:
         {
             window_->get_handle()->close();
         }
         break;
 
-        case sf::Event::Resized:
+        case sf::Event::EventType::Resized:
         {
             window_->OnResize(event.size.width, event.size.height);
+        }
+        break;
+
+        case sf::Event::EventType::MouseMoved:
+        case sf::Event::EventType::MouseButtonPressed:
+        case sf::Event::EventType::MouseButtonReleased:
+        {
+            // app轮询事件，转发给window，window打包成ultralight事件后，
+            // 再将事件转发给其监听者
+            window_->OnMouseEvent(event);
         }
         break;
         }

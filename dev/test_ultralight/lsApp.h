@@ -20,6 +20,8 @@ public:
 
     virtual void OnResize(uint32_t width, uint32_t height) override;
 
+    virtual void OnMouseEvent(const ultralight::MouseEvent& event) override;
+
 private:
     void processEvents();
     void update(sf::Time deltaTime);
