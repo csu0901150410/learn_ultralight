@@ -1,6 +1,8 @@
 ﻿#pragma once
-#include <Ultralight/Ultralight.h>
 
+#include <unordered_map>
+
+#include <Ultralight/Ultralight.h>
 #include <AppCore/AppCore.h>
 
 #include <SFML/Window.hpp>
@@ -34,6 +36,8 @@ public:
 
     void Close();
 
+    void SetCursor(ultralight::Cursor cursor);
+
     void PresentFrame();
 
     sf::RenderWindow *get_handle() { return window_; }
@@ -48,4 +52,7 @@ protected:
 
     uint32_t width_;
     uint32_t height_;
+
+    // 存储sfml中的各种光标实例指针
+    std::unordered_map<ultralight::Cursor, sf::Cursor *> cursor_map_;
 };

@@ -85,6 +85,10 @@ void lsApp::OnFinishLoading(ultralight::View *caller, uint64_t frame_id, bool is
     }
 }
 
+void lsApp::OnChangeCursor(ultralight::View *caller, Cursor cursor) {
+    window_->SetCursor(cursor);
+}
+
 void lsApp::OnResize(uint32_t width, uint32_t height) {
     // 更新ultralight的view
     view_->Resize(width, height);

@@ -1,7 +1,6 @@
 ﻿#include "lsWindow.h"
 
-lsWindow::lsWindow(uint32_t width, uint32_t height)
-{
+lsWindow::lsWindow(uint32_t width, uint32_t height) {
     window_ = new sf::RenderWindow(sf::VideoMode({ width, height }), "sfml window");
     window_->setVerticalSyncEnabled(true);// 开启垂直同步
 
@@ -9,10 +8,20 @@ lsWindow::lsWindow(uint32_t width, uint32_t height)
     height_ = height;
 
     // SFML窗口事件传递到ultralight
+
+    // 初始化各种光标实例
+    sf::Cursor *pointerCursor = new sf::Cursor();
+    pointerCursor->loadFromSystem(sf::Cursor::Type::Arrow);
+    cursor_map_.insert(std::make_pair(ultralight::Cursor::kCursor_Pointer, pointerCursor));
+
+    sf::Cursor *handCursor = new sf::Cursor();
+    handCursor->loadFromSystem(sf::Cursor::Type::Hand);
+    cursor_map_.insert(std::make_pair(ultralight::Cursor::kCursor_Hand, handCursor));
 }
 
-lsWindow::~lsWindow()
-{
+lsWindow::~lsWindow() {
+    for (auto &item : cursor_map_)
+        delete item.second;
 }
 
 uint32_t lsWindow::width() const {
@@ -27,6 +36,13 @@ uint32_t lsWindow::height() const {
 
 void lsWindow::Close() {
     window_->close();
+}
+
+void lsWindow::SetCursor(ultralight::Cursor cursor) {
+    // 根据传过来的ultralight光标类型设置对应的sfml光标
+    if (cursor_map_.count(cursor)) {
+        window_->setMouseCursor(*cursor_map_[cursor]);
+    }
 }
 
 void lsWindow::PresentFrame()
