@@ -18,6 +18,7 @@ public:
 
     // 从 LoadListener 继承的方法
     virtual void OnFinishLoading(ultralight::View* caller, uint64_t frame_id, bool is_main_frame, const String& url) override;
+    virtual void OnDOMReady(ultralight::View* caller, uint64_t frame_id, bool is_main_frame, const String& url) override;
 
     // 从 ViewListener 继承的方法
     virtual void OnChangeCursor(ultralight::View* caller, Cursor cursor) override;
@@ -25,6 +26,8 @@ public:
     // 从 lsWindowListener 继承的方法
     virtual void OnResize(uint32_t width, uint32_t height) override;
     virtual void OnMouseEvent(const ultralight::MouseEvent& event) override;
+
+    JSValue expose_to_js(const JSObject &thisObject, const JSArgs &args);
 
 private:
     void processEvents();

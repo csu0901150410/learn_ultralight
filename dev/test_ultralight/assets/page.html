@@ -70,7 +70,18 @@
             color: #555;
             font-size: 24px;
         }
+
+        button:hover {
+            background-color: #3498db;
+            color: white;
+        }
+
+        button:active {
+            background-color: #ff0000;
+        }
     </style>
+
+    <script src="page.js"></script>
 </head>
 
 <body>
@@ -78,6 +89,7 @@
         <!-- 左侧菜单栏 -->
         <div class="menu">
             <h1>Menu</h1>
+            <button id="btn">Click Me</button>
             <ul>
                 <li><a href="#">Home</a></li>
                 <li><a href="#">Settings</a></li>

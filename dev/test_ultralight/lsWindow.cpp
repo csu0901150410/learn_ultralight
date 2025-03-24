@@ -65,12 +65,12 @@ void lsWindow::OnMouseEvent(const sf::Event &event) {
     ultralight::MouseEvent evt;
 
     // 鼠标移动、按下、抬起都可以取位置
-    evt.x = event.mouseMove.x;
-    evt.y = event.mouseMove.y;
 
     if (event.type == sf::Event::MouseMoved) {
         evt.type = ultralight::MouseEvent::kType_MouseMoved;
         evt.button = ultralight::MouseEvent::kButton_None;
+        evt.x = event.mouseMove.x;
+        evt.y = event.mouseMove.y;
     }
     else {
         // 鼠标左中右哪个按键按下
@@ -93,11 +93,14 @@ void lsWindow::OnMouseEvent(const sf::Event &event) {
 
         // 鼠标按键是按下还是抬起
         if (event.type == sf::Event::MouseButtonPressed) {
-            evt.type = ultralight::MouseEvent::kType_MouseUp;
-        }
-        else {
             evt.type = ultralight::MouseEvent::kType_MouseDown;
         }
+        else {
+            evt.type = ultralight::MouseEvent::kType_MouseUp;
+        }
+
+        evt.x = event.mouseButton.x;
+        evt.y = event.mouseButton.y;
     }
 
     // 包装好ultralight事件结构体后传递给监听者

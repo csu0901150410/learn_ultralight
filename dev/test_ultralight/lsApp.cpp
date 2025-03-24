@@ -2,6 +2,8 @@
 
 #include <chrono>
 
+#include <JavaScriptCore/JSRetainPtr.h>
+
 lsApp::lsApp() 
     : gui_texture_(new sf::Texture())
     , canvas_texture_(new sf::Texture()) 
@@ -85,6 +87,21 @@ void lsApp::OnFinishLoading(ultralight::View *caller, uint64_t frame_id, bool is
     }
 }
 
+void lsApp::OnDOMReady(ultralight::View *caller, uint64_t frame_id, bool is_main_frame, const String &url) {
+    RefPtr<JSContext> context = caller->LockJSContext();
+    SetJSContext(context->ctx());
+
+    // 全局js对象，也就是window
+    JSObject globalObj = JSGlobalObject();
+
+    // c++和js交互，就两个需求
+    // 1、在js中调用c++的函数（主要是这个），比如界面按钮按下，c++后台执行一些任务
+    // 2、在c++中调用js函数，比如任务执行过程中，需要更新界面，比如进度条、调起子界面
+
+    // 注册c++函数到js全局对象，只能注册成员函数，可以在成员函数内分发
+    globalObj["expose_to_js"] = BindJSCallbackWithRetval(&lsApp::expose_to_js);
+}
+
 void lsApp::OnChangeCursor(ultralight::View *caller, Cursor cursor) {
     window_->SetCursor(cursor);
 }
@@ -102,6 +119,26 @@ void lsApp::OnResize(uint32_t width, uint32_t height) {
 void lsApp::OnMouseEvent(const ultralight::MouseEvent &event) {
     // sfml窗口过来的事件传递给ultralight的view
     view_->FireMouseEvent(event);
+}
+
+JSValue command_00(const JSObject& thisObject, const JSArgs& args)
+{
+    // js调用c++
+    return JSValue();
+}
+
+JSValue lsApp::expose_to_js(const JSObject &thisObject, const JSArgs &args) {
+    ultralight::String name = args[0].ToString();
+
+    std::string strname = std::string(name.utf8().data());
+    if (0 == std::strcmp(strname.c_str(), "command_00"))
+    {
+        ultralight::String name = args[0].ToString();
+        std::string strname = std::string(name.utf8().data());
+
+        command_00(thisObject, JSArgs());
+    }
+    return JSValue();
 }
 
 void lsApp::processEvents() {
