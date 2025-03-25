@@ -8,7 +8,9 @@ lsApp::lsApp()
     : gui_texture_(new sf::Texture())
     , canvas_texture_(new sf::Texture()) 
     , gui_sprite_(new sf::Sprite())
-    , canvas_sprite_(new sf::Sprite()) {
+    , canvas_sprite_(new sf::Sprite())
+    , sub_gui_texture_(new sf::Texture())
+    , sub_gui_sprite_(new sf::Sprite()) {
 
     canvas_sprite_->move(sf::Vector2f(300.f, 0.f));
     
@@ -53,6 +55,25 @@ lsApp::~lsApp() {
     canvas_sprite_ = nullptr;
 
     camera_.release();
+}
+
+void lsApp::create_subwindow() {
+    // 创建子窗口
+    if (!m_subwindow) {
+        m_subwindow = std::make_unique<lsWindow>(400, 300); // 设置合适的窗口大小
+        m_subwindow->set_listener(this);
+        m_subwindow->get_handle()->setTitle("sub window");
+
+        // 为子窗口创建新的View
+        ViewConfig view_config;
+        view_config.is_accelerated = false;
+        m_subview = renderer_->CreateView(400, 300, view_config, nullptr);
+        
+        // 加载设置页面
+        m_subview->LoadURL("file:///page2.html");
+        m_subview->set_view_listener(this);
+        m_subview->set_load_listener(this);
+    }
 }
 
 void lsApp::run() {
@@ -129,19 +150,16 @@ JSValue command_00(const JSObject& thisObject, const JSArgs& args)
 
 JSValue lsApp::expose_to_js(const JSObject &thisObject, const JSArgs &args) {
     ultralight::String name = args[0].ToString();
-
     std::string strname = std::string(name.utf8().data());
-    if (0 == std::strcmp(strname.c_str(), "command_00"))
-    {
-        ultralight::String name = args[0].ToString();
-        std::string strname = std::string(name.utf8().data());
 
-        command_00(thisObject, JSArgs());
+    if (strname == "command_00") {
+        create_subwindow();
     }
     return JSValue();
 }
 
 void lsApp::processEvents() {
+    // 处理主窗口事件
     sf::Event event;
     while (window_->get_handle()->pollEvent(event)) {
         switch (event.type) {
@@ -166,6 +184,27 @@ void lsApp::processEvents() {
             window_->OnMouseEvent(event);
         }
         break;
+        }
+    }
+
+    // 处理子窗口事件（如果存在）
+    if (m_subwindow && m_subwindow->get_handle()->isOpen()) {
+        sf::Event sub_event;
+        while (m_subwindow->get_handle()->pollEvent(sub_event)) {
+            if (sub_event.type == sf::Event::Closed) {
+                m_subwindow->get_handle()->close();
+            }
+            else if (sub_event.type == sf::Event::Resized) {
+                m_subwindow->OnResize(sub_event.size.width, sub_event.size.height);
+                if (m_subview) {
+                    m_subview->Resize(sub_event.size.width, sub_event.size.height);
+                }
+            }
+            else if (sub_event.type == sf::Event::MouseMoved || 
+                     sub_event.type == sf::Event::MouseButtonPressed || 
+                     sub_event.type == sf::Event::MouseButtonReleased) {
+                    m_subwindow->OnMouseEvent(event);
+            }
         }
     }
 }
@@ -219,6 +258,28 @@ void lsApp::render() {
     processCvFrame();
 
     window_->get_handle()->display();
+
+
+    // 渲染子窗口（如果存在）
+    if (m_subwindow && m_subwindow->get_handle()->isOpen() && m_subview) {
+        m_subwindow->get_handle()->clear();
+        
+        Surface* sub_surface = m_subview->surface();
+        if (sub_surface && !sub_surface->dirty_bounds().IsEmpty()) {
+            // 绘制ultralight渲染的html
+            RefPtr<Bitmap> bitmap = static_cast<BitmapSurface*>(sub_surface)->bitmap();
+            sub_surface->ClearDirtyBounds();
+    
+            sub_gui_buffer_ = bitmap->EncodePNG();// 最新版sdk才有这个接口
+        }
+
+        sub_gui_texture_->loadFromMemory(sub_gui_buffer_->data(), sub_gui_buffer_->size());
+        sub_gui_sprite_->setTexture(*sub_gui_texture_.get(), true);
+
+        m_subwindow->get_handle()->draw(*sub_gui_sprite_.get());
+        
+        m_subwindow->get_handle()->display();
+    }
 }
 
 void lsApp::processCvFrame() {
