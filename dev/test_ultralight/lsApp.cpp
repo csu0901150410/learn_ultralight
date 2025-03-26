@@ -8,9 +8,7 @@ lsApp::lsApp()
     : gui_texture_(new sf::Texture())
     , canvas_texture_(new sf::Texture()) 
     , gui_sprite_(new sf::Sprite())
-    , canvas_sprite_(new sf::Sprite())
-    , sub_gui_texture_(new sf::Texture())
-    , sub_gui_sprite_(new sf::Sprite()) {
+    , canvas_sprite_(new sf::Sprite()) {
 
     canvas_sprite_->move(sf::Vector2f(300.f, 0.f));
     
@@ -57,23 +55,24 @@ lsApp::~lsApp() {
     camera_.release();
 }
 
-void lsApp::create_subwindow() {
-    // 创建子窗口
-    if (!m_subwindow) {
-        m_subwindow = std::make_unique<lsWindow>(400, 300); // 设置合适的窗口大小
-        m_subwindow->set_listener(this);
-        m_subwindow->get_handle()->setTitle("sub window");
+void lsApp::create_subwindow(const std::string &url) {
+    lsSubWindow subwindow;
+    subwindow.m_window.reset(new lsWindow(400, 300));
+    subwindow.m_window->set_listener(this);
 
-        // 为子窗口创建新的View
-        ViewConfig view_config;
-        view_config.is_accelerated = false;
-        m_subview = renderer_->CreateView(400, 300, view_config, nullptr);
-        
-        // 加载设置页面
-        m_subview->LoadURL("file:///page2.html");
-        m_subview->set_view_listener(this);
-        m_subview->set_load_listener(this);
-    }
+    ViewConfig view_config;
+    view_config.is_accelerated = false;
+    subwindow.m_view = renderer_->CreateView(400, 300, view_config, nullptr);
+    subwindow.m_view->LoadURL(url.c_str());
+    subwindow.m_view->set_view_listener(this);
+    subwindow.m_view->set_load_listener(this);
+
+    subwindow.m_surface = nullptr;
+    subwindow.m_texture = std::make_unique<sf::Texture>();
+    subwindow.m_sprite = std::make_unique<sf::Sprite>();
+
+    // 要用移动语义，因为成员包含移动语义的unique_ptr
+    m_subwindows.push_back(std::move(subwindow));
 }
 
 void lsApp::run() {
@@ -153,7 +152,7 @@ JSValue lsApp::expose_to_js(const JSObject &thisObject, const JSArgs &args) {
     std::string strname = std::string(name.utf8().data());
 
     if (strname == "command_00") {
-        create_subwindow();
+        create_subwindow("file:///page2.html");
     }
     return JSValue();
 }
@@ -166,6 +165,10 @@ void lsApp::processEvents() {
         case sf::Event::EventType::Closed:
         {
             window_->get_handle()->close();
+            // 主窗口关闭时，关闭所有子窗口
+            for (auto &subwindow : m_subwindows) {
+                subwindow.m_window->get_handle()->close();
+            }
         }
         break;
 
@@ -187,23 +190,20 @@ void lsApp::processEvents() {
         }
     }
 
-    // 处理子窗口事件（如果存在）
-    if (m_subwindow && m_subwindow->get_handle()->isOpen()) {
+    for (auto &subwindow : m_subwindows) {
         sf::Event sub_event;
-        while (m_subwindow->get_handle()->pollEvent(sub_event)) {
+        while (subwindow.m_window->get_handle()->pollEvent(sub_event)) {
             if (sub_event.type == sf::Event::Closed) {
-                m_subwindow->get_handle()->close();
+                subwindow.m_window->get_handle()->close();
             }
             else if (sub_event.type == sf::Event::Resized) {
-                m_subwindow->OnResize(sub_event.size.width, sub_event.size.height);
-                if (m_subview) {
-                    m_subview->Resize(sub_event.size.width, sub_event.size.height);
-                }
+                subwindow.m_window->OnResize(sub_event.size.width, sub_event.size.height);
+                subwindow.m_view->Resize(sub_event.size.width, sub_event.size.height);
             }
-            else if (sub_event.type == sf::Event::MouseMoved || 
-                     sub_event.type == sf::Event::MouseButtonPressed || 
+            else if (sub_event.type == sf::Event::MouseMoved ||
+                     sub_event.type == sf::Event::MouseButtonPressed ||
                      sub_event.type == sf::Event::MouseButtonReleased) {
-                    m_subwindow->OnMouseEvent(event);
+                    subwindow.m_window->OnMouseEvent(event);
             }
         }
     }
@@ -259,26 +259,26 @@ void lsApp::render() {
 
     window_->get_handle()->display();
 
-
-    // 渲染子窗口（如果存在）
-    if (m_subwindow && m_subwindow->get_handle()->isOpen() && m_subview) {
-        m_subwindow->get_handle()->clear();
-        
-        Surface* sub_surface = m_subview->surface();
+    // 渲染子窗口
+    for (auto &subwindow : m_subwindows) {
+        Surface *sub_surface = subwindow.m_view->surface();
         if (sub_surface && !sub_surface->dirty_bounds().IsEmpty()) {
             // 绘制ultralight渲染的html
             RefPtr<Bitmap> bitmap = static_cast<BitmapSurface*>(sub_surface)->bitmap();
             sub_surface->ClearDirtyBounds();
-    
-            sub_gui_buffer_ = bitmap->EncodePNG();// 最新版sdk才有这个接口
+
+            subwindow.m_surface = bitmap->EncodePNG();// 最新版sdk才有这个接口
         }
 
-        sub_gui_texture_->loadFromMemory(sub_gui_buffer_->data(), sub_gui_buffer_->size());
-        sub_gui_sprite_->setTexture(*sub_gui_texture_.get(), true);
+        if (subwindow.m_surface.get() != nullptr) {
+            subwindow.m_window->get_handle()->clear();
 
-        m_subwindow->get_handle()->draw(*sub_gui_sprite_.get());
-        
-        m_subwindow->get_handle()->display();
+            subwindow.m_texture->loadFromMemory(subwindow.m_surface->data(), subwindow.m_surface->size());
+            subwindow.m_sprite->setTexture(*subwindow.m_texture.get(), true);
+            subwindow.m_window->get_handle()->draw(*subwindow.m_sprite.get());
+            
+            subwindow.m_window->get_handle()->display();
+        }
     }
 }
 

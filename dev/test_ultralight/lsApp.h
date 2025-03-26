@@ -8,6 +8,15 @@
 
 using namespace ultralight;
 
+struct lsSubWindow
+{
+    std::unique_ptr<lsWindow> m_window;
+    RefPtr<View> m_view;
+    RefPtr<Buffer> m_surface;
+    std::unique_ptr<sf::Texture> m_texture;
+    std::unique_ptr<sf::Sprite> m_sprite;
+};
+
 class lsApp : public lsWindowListener, public ViewListener, public LoadListener
 {
 public:
@@ -58,13 +67,8 @@ protected:
     sf::Time time_per_frame_;
 
 private:
-    std::unique_ptr<lsWindow> m_subwindow;
-    RefPtr<View> m_subview;
-
-    RefPtr<Buffer> sub_gui_buffer_;
-    std::unique_ptr<sf::Texture> sub_gui_texture_;
-    std::unique_ptr<sf::Sprite> sub_gui_sprite_;
+    std::vector<lsSubWindow> m_subwindows;
 
 public:
-    void create_subwindow();
+    void create_subwindow(const std::string& url);
 };
