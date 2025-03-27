@@ -1,108 +1,319 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OpenCV + Ultralight GUI</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <!-- 禁用缓存以确保UI始终最新 -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <title>Image Editor</title>
     <style>
-        /* 全局样式 */
-        body,
-        html {
+        /* 重置默认样式 */
+        * {
             margin: 0;
             padding: 0;
-            height: 100%;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
             font-family: Arial, sans-serif;
-            background-color: #2c3e50;
-            color: #ecf0f1;
-        }
-
-        /* 容器布局 */
-        .container {
+            background-color: #2c2c2c;
+            color: #fff;
+            height: 100vh;
             display: flex;
-            height: 100%;
+            flex-direction: column;
+            overflow: hidden;
+            /* 启用硬件加速 */
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            perspective: 1000;
+            -webkit-perspective: 1000;
         }
 
-        /* 左侧菜单栏 */
-        .menu {
-            width: 250px;
-            background-color: #34495e;
-            padding: 20px;
-            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        /* 菜单栏样式 */
+        .menubar {
+            background-color: #333;
+            padding: 0 10px;
+            user-select: none;
+            -webkit-user-select: none;
+            /* 启用硬件加速 */
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
+            z-index: 100;
         }
 
-        .menu h1 {
-            font-size: 24px;
-            margin-bottom: 20px;
-            color: #3498db;
-        }
-
-        .menu ul {
+        .menubar > ul {
             list-style: none;
-            padding: 0;
+            display: flex;
         }
 
-        .menu ul li {
-            margin: 15px 0;
+        .menu-item {
+            position: relative;
+            padding: 8px 15px;
+            cursor: pointer;
+            /* 确保菜单项始终可点击 */
+            z-index: 101;
         }
 
-        .menu ul li a {
-            text-decoration: none;
-            color: #ecf0f1;
-            font-size: 18px;
-            transition: color 0.3s;
+        .menu-item:hover {
+            background-color: #444;
         }
 
-        .menu ul li a:hover {
-            color: #3498db;
+        .submenu {
+            visibility: hidden;
+            opacity: 0;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background-color: #333;
+            min-width: 200px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 1000;
+            /* 使用硬件加速 */
+            transform: translateZ(0);
+            /* 预先渲染但不显示 */
+            pointer-events: none;
+            /* 取消过渡效果，立即显示 */
         }
 
-        /* 右侧图像显示区域 */
-        .image-display {
+        /* 移除hover显示菜单的样式 */
+        .menu-item.active {
+            background-color: #444;
+        }
+
+        .menu-item.active .submenu {
+            visibility: visible;
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .submenu-item {
+            padding: 8px 15px;
+            border-bottom: 1px solid #444;
+        }
+
+        .submenu-item:hover {
+            background-color: #444;
+        }
+
+        /* 主要内容区域 */
+        .main-content {
+            display: flex;
             flex: 1;
-            background-color: #000;
+            overflow: hidden;
+        }
+
+        /* 图层面板 */
+        .layers-panel {
+            width: 250px;
+            background-color: #333;
+            border-right: 1px solid #444;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .layers-header {
+            padding: 10px;
+            border-bottom: 1px solid #444;
+            font-weight: bold;
+        }
+
+        .layers-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 0;
+        }
+
+        .layer-item {
+            padding: 8px 10px;
+            margin: 2px 0;
+            background-color: #3c3c3c;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .layer-item:hover {
+            background-color: #444;
+        }
+
+        .layer-item.active {
+            background-color: #4a4a4a;
+            border-left: 3px solid #0088ff;
+        }
+
+        /* 图像编辑区域 */
+        .image-area {
+            flex: 1;
+            background-color: #1a1a1a;
             display: flex;
             justify-content: center;
             align-items: center;
+            overflow: hidden;
         }
 
-        .image-display .placeholder {
-            color: #555;
-            font-size: 24px;
+        .image-placeholder {
+            color: #444;
+            font-size: 18px;
+            text-align: center;
         }
 
-        button:hover {
-            background-color: #3498db;
-            color: white;
-        }
-
-        button:active {
-            background-color: #ff0000;
+        /* 快捷键提示 */
+        .shortcut {
+            float: right;
+            color: #666;
+            font-size: 0.9em;
+            margin-left: 20px;
         }
     </style>
-
-    <script src="page.js"></script>
 </head>
-
 <body>
-    <div class="container">
-        <!-- 左侧菜单栏 -->
-        <div class="menu">
-            <h1>Menu</h1>
-            <button id="btn">Click Me</button>
-            <ul>
-                <li><a href="#">Home</a></li>
-                <li><a href="#">Settings</a></li>
-                <li><a href="#">Tools</a></li>
-                <li><a href="#">Help</a></li>
-            </ul>
+    <!-- 菜单栏 -->
+    <div class="menubar">
+        <ul>
+            <li class="menu-item">
+                文件
+                <div class="submenu">
+                    <div class="submenu-item">新建 <span class="shortcut">Ctrl+N</span></div>
+                    <div class="submenu-item">打开 <span class="shortcut">Ctrl+O</span></div>
+                    <div class="submenu-item">保存 <span class="shortcut">Ctrl+S</span></div>
+                    <div class="submenu-item">另存为 <span class="shortcut">Ctrl+Shift+S</span></div>
+                    <div class="submenu-item">退出 <span class="shortcut">Alt+F4</span></div>
+                </div>
+            </li>
+            <li class="menu-item">
+                编辑
+                <div class="submenu">
+                    <div class="submenu-item">撤销 <span class="shortcut">Ctrl+Z</span></div>
+                    <div class="submenu-item">重做 <span class="shortcut">Ctrl+Y</span></div>
+                    <div class="submenu-item">剪切 <span class="shortcut">Ctrl+X</span></div>
+                    <div class="submenu-item">复制 <span class="shortcut">Ctrl+C</span></div>
+                    <div class="submenu-item">粘贴 <span class="shortcut">Ctrl+V</span></div>
+                </div>
+            </li>
+            <li class="menu-item">
+                选择
+                <div class="submenu">
+                    <div class="submenu-item">全选 <span class="shortcut">Ctrl+A</span></div>
+                    <div class="submenu-item">取消选择 <span class="shortcut">Ctrl+D</span></div>
+                    <div class="submenu-item">反选 <span class="shortcut">Shift+Ctrl+I</span></div>
+                    <div class="submenu-item">选择区域</div>
+                    <div class="submenu-item">魔棒工具</div>
+                </div>
+            </li>
+            <li class="menu-item">
+                查看
+                <div class="submenu">
+                    <div class="submenu-item">缩放到适合窗口</div>
+                    <div class="submenu-item">实际大小 <span class="shortcut">Ctrl+0</span></div>
+                    <div class="submenu-item">放大 <span class="shortcut">Ctrl++</span></div>
+                    <div class="submenu-item">缩小 <span class="shortcut">Ctrl+-</span></div>
+                    <div class="submenu-item">显示网格</div>
+                </div>
+            </li>
+            <li class="menu-item">
+                帮助
+                <div class="submenu">
+                    <div class="submenu-item" data-action="openHelp">使用帮助</div>
+                    <div class="submenu-item" data-action="openShortcuts">快捷键列表</div>
+                    <div class="submenu-item" data-action="openAbout">关于</div>
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    <!-- 主要内容区域 -->
+    <div class="main-content">
+        <!-- 图层面板 -->
+        <div class="layers-panel">
+            <div class="layers-header">图层</div>
+            <div class="layers-list">
+                <div class="layer-item active">背景层</div>
+                <div class="layer-item">图层 1</div>
+                <div class="layer-item">图层 2</div>
+                <div class="layer-item">调整层</div>
+            </div>
         </div>
 
-        <!-- 右侧图像显示区域 -->
-        <div class="image-display">
-            <div class="placeholder">Image Display Area</div>
+        <!-- 图像编辑区域 -->
+        <div class="image-area">
+            <div class="image-placeholder">
+                图像显示区域
+            </div>
         </div>
     </div>
-</body>
 
+    <script>
+        // 帮助相关函数
+        function handleHelpAction(action) {
+            switch(action) {
+                case 'openAbout':
+                    js_open_window('file:///about.html');
+                    break;
+            }
+        }
+
+        // 使用JavaScript控制菜单显示，通过点击触发
+        document.querySelectorAll('.menu-item').forEach(menuItem => {
+            menuItem.addEventListener('click', function(e) {
+                e.stopPropagation(); // 阻止事件冒泡
+
+                const isActive = this.classList.contains('active');
+                
+                // 先关闭所有菜单
+                document.querySelectorAll('.menu-item').forEach(item => {
+                    item.classList.remove('active');
+                });
+
+                // 如果当前菜单不是活动状态，则激活它
+                if (!isActive) {
+                    this.classList.add('active');
+                }
+            });
+        });
+        
+        // 为菜单项添加点击事件
+        document.querySelectorAll('.submenu-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const action = this.getAttribute('data-action');
+                if (action && action.startsWith('open')) {
+                    handleHelpAction(action);
+                }
+                
+                // 点击后隐藏菜单
+                const menuItem = this.closest('.menu-item');
+                if (menuItem) {
+                    menuItem.classList.remove('active');
+                }
+            });
+        });
+
+        // 点击其他区域时隐藏菜单
+        document.addEventListener('click', function(e) {
+            // 如果点击的不是菜单项或其子元素
+            if (!e.target.closest('.menu-item')) {
+                // 关闭所有菜单
+                document.querySelectorAll('.menu-item').forEach(item => {
+                    item.classList.remove('active');
+                });
+            }
+        });
+
+        // 为图层项添加点击事件
+        document.querySelectorAll('.layer-item').forEach(item => {
+            item.addEventListener('click', function() {
+                // 移除其他图层的active类
+                document.querySelectorAll('.layer-item').forEach(layer => {
+                    layer.classList.remove('active');
+                });
+                // 为当前点击的图层添加active类
+                this.classList.add('active');
+            });
+        });
+    </script>
+</body>
 </html>

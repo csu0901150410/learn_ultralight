@@ -35,8 +35,8 @@ lsApp::lsApp()
     // cv::Mat mat = cv::imread("../x64/Debug/supermarie.png");
     // cv::cvtColor(mat, rgbmat_, cv::COLOR_BGR2RGBA);
 
-    camera_.release();
-    camera_.open(0);
+    // camera_.release();
+    // camera_.open(0);
 
     time_per_frame_ = sf::seconds(1.0f / 60.0f);
 }
@@ -57,12 +57,12 @@ lsApp::~lsApp() {
 
 void lsApp::create_subwindow(const std::string &url) {
     lsSubWindow subwindow;
-    subwindow.m_window.reset(new lsWindow(400, 300));
+    subwindow.m_window.reset(new lsWindow(400, 530));
     subwindow.m_window->set_listener(this);
 
     ViewConfig view_config;
     view_config.is_accelerated = false;
-    subwindow.m_view = renderer_->CreateView(400, 300, view_config, nullptr);
+    subwindow.m_view = renderer_->CreateView(400, 530, view_config, nullptr);
     subwindow.m_view->LoadURL(url.c_str());
     subwindow.m_view->set_view_listener(this);
     subwindow.m_view->set_load_listener(this);
@@ -119,7 +119,7 @@ void lsApp::OnDOMReady(ultralight::View *caller, uint64_t frame_id, bool is_main
     // 2、在c++中调用js函数，比如任务执行过程中，需要更新界面，比如进度条、调起子界面
 
     // 注册c++函数到js全局对象，只能注册成员函数，可以在成员函数内分发
-    globalObj["expose_to_js"] = BindJSCallbackWithRetval(&lsApp::expose_to_js);
+    globalObj["js_open_window"] = BindJSCallbackWithRetval(&lsApp::js_open_window);
 }
 
 void lsApp::OnChangeCursor(ultralight::View *caller, Cursor cursor) {
@@ -160,13 +160,13 @@ JSValue command_00(const JSObject& thisObject, const JSArgs& args)
     return JSValue();
 }
 
-JSValue lsApp::expose_to_js(const JSObject &thisObject, const JSArgs &args) {
-    ultralight::String name = args[0].ToString();
-    std::string strname = std::string(name.utf8().data());
+JSValue lsApp::js_open_window(const JSObject &thisObject, const JSArgs &args) {
+    ultralight::String ulstr = args[0].ToString();
+    std::string url = std::string(ulstr.utf8().data());
 
-    if (strname == "command_00") {
-        create_subwindow("file:///page2.html");
-    }
+    // create_subwindow("file:///page2.html");
+    create_subwindow(url);
+
     return JSValue();
 }
 
@@ -243,32 +243,32 @@ void lsApp::render() {
         gui_buffer_ = bitmap->EncodePNG();// 最新版sdk才有这个接口
     }
 
-    if (camera_.isOpened()) {
-        camera_ >> rgbmat_;
-        cv::cvtColor(rgbmat_, rgbmat_, cv::COLOR_BGR2RGBA);
-    }
+    // if (camera_.isOpened()) {
+    //     camera_ >> rgbmat_;
+    //     cv::cvtColor(rgbmat_, rgbmat_, cv::COLOR_BGR2RGBA);
+    // }
 
     if (gui_buffer_.get() == nullptr) {
         return;// 要等ui渲染完毕
     }
 
-    if (rgbmat_.empty()) {
-        return;
-    }
+    // if (rgbmat_.empty()) {
+    //     return;
+    // }
 
     gui_texture_->loadFromMemory(gui_buffer_->data(), gui_buffer_->size());
     gui_sprite_->setTexture(*gui_texture_.get(), true);
 
-    canvas_texture_->create(rgbmat_.cols, rgbmat_.rows);
-    canvas_texture_->update(rgbmat_.data);
-    canvas_sprite_->setTexture(*canvas_texture_.get(), true);
+    // canvas_texture_->create(rgbmat_.cols, rgbmat_.rows);
+    // canvas_texture_->update(rgbmat_.data);
+    // canvas_sprite_->setTexture(*canvas_texture_.get(), true);
 
     window_->get_handle()->clear();
     window_->get_handle()->draw(*gui_sprite_.get());
-    window_->get_handle()->draw(*canvas_sprite_.get());
+    // window_->get_handle()->draw(*canvas_sprite_.get());
 
     // 对采集到的帧进行处理
-    processCvFrame();
+    // processCvFrame();
 
     window_->get_handle()->display();
 

@@ -36,7 +36,7 @@ public:
     virtual void OnResize(lsWindow *window, uint32_t width, uint32_t height) override;
     virtual void OnMouseEvent(const ultralight::MouseEvent& event) override;
 
-    JSValue expose_to_js(const JSObject &thisObject, const JSArgs &args);
+    JSValue js_open_window(const JSObject &thisObject, const JSArgs &args);
 
 private:
     void processEvents();
