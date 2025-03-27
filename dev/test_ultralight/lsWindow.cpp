@@ -51,7 +51,7 @@ void lsWindow::PresentFrame()
 }
 
 void lsWindow::OnResize(uint32_t width, uint32_t height) {
-    listener_->OnResize(width, height);
+    listener_->OnResize(this, width, height);
 }
 
 void lsWindow::OnMouseEvent(const sf::Event &event) {

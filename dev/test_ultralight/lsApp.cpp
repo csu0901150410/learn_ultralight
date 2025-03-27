@@ -126,14 +126,27 @@ void lsApp::OnChangeCursor(ultralight::View *caller, Cursor cursor) {
     window_->SetCursor(cursor);
 }
 
-void lsApp::OnResize(uint32_t width, uint32_t height) {
-    // 更新ultralight的view
-    view_->Resize(width, height);
-    view_->set_needs_paint(true);
+void lsApp::OnResize(lsWindow *window, uint32_t width, uint32_t height) {
+    // 主窗口
+    if (window == window_.get()) {
+        // 更新ultralight的view
+        view_->Resize(width, height);
+        view_->set_needs_paint(true);
+    }
+    // 子窗口
+    else {
+        for (auto &subwindow : m_subwindows) {
+            if (window == subwindow.m_window.get()) {
+                subwindow.m_view->Resize(width, height);
+                subwindow.m_view->set_needs_paint(true);
+                break;
+            }
+        }
+    }
 
     // 更新sfml的view，使得sprite不拉伸
     sf::View sfview(sf::FloatRect(0, 0, (float)width, (float)height));
-    window_->get_handle()->setView(sfview);
+    window->get_handle()->setView(sfview);
 }
 
 void lsApp::OnMouseEvent(const ultralight::MouseEvent &event) {

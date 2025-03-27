@@ -10,12 +10,14 @@
 
 using namespace ultralight;
 
+class lsWindow;
+
 class lsWindowListener {
 public:
     virtual ~lsWindowListener() {}
 
     // virtual void OnClose() = 0;
-    virtual void OnResize(uint32_t width, uint32_t height) = 0;
+    virtual void OnResize(lsWindow *window, uint32_t width, uint32_t height) = 0;
     // virtual void OnChangeFocus(bool focused) = 0;
     // virtual void OnKeyEvent(const KeyEvent& evt) = 0;
     virtual void OnMouseEvent(const ultralight::MouseEvent& evt) = 0;

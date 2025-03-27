@@ -33,7 +33,7 @@ public:
     virtual void OnChangeCursor(ultralight::View* caller, Cursor cursor) override;
 
     // 从 lsWindowListener 继承的方法
-    virtual void OnResize(uint32_t width, uint32_t height) override;
+    virtual void OnResize(lsWindow *window, uint32_t width, uint32_t height) override;
     virtual void OnMouseEvent(const ultralight::MouseEvent& event) override;
 
     JSValue expose_to_js(const JSObject &thisObject, const JSArgs &args);
