@@ -34,7 +34,8 @@ public:
 
     // 从 lsWindowListener 继承的方法
     virtual void OnResize(lsWindow *window, uint32_t width, uint32_t height) override;
-    virtual void OnMouseEvent(const ultralight::MouseEvent& event) override;
+    virtual void OnMouseEvent(lsWindow *window, const ultralight::MouseEvent& event) override;
+    virtual void OnKeyEvent(lsWindow *window, const ultralight::KeyEvent& event) override;
 
     JSValue js_open_window(const JSObject &thisObject, const JSArgs &args);
 

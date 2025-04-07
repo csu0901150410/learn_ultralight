@@ -149,9 +149,40 @@ void lsApp::OnResize(lsWindow *window, uint32_t width, uint32_t height) {
     window->get_handle()->setView(sfview);
 }
 
-void lsApp::OnMouseEvent(const ultralight::MouseEvent &event) {
+void lsApp::OnMouseEvent(lsWindow *window, const ultralight::MouseEvent &event) {
     // sfml窗口过来的事件传递给ultralight的view
-    view_->FireMouseEvent(event);
+
+    // 主窗口
+    if (window == window_.get()) {
+        // 更新ultralight的view
+        view_->FireMouseEvent(event);
+    }
+    // 子窗口
+    else {
+        for (auto &subwindow : m_subwindows) {
+            if (window == subwindow.m_window.get()) {
+                subwindow.m_view->FireMouseEvent(event);
+                break;
+            }
+        }
+    }
+}
+
+void lsApp::OnKeyEvent(lsWindow *window, const ultralight::KeyEvent &event) {
+    // 主窗口
+    if (window == window_.get()) {
+        // 更新ultralight的view
+        view_->FireKeyEvent(event);
+    }
+    // 子窗口
+    else {
+        for (auto &subwindow : m_subwindows) {
+            if (window == subwindow.m_window.get()) {
+                subwindow.m_view->FireKeyEvent(event);
+                break;
+            }
+        }
+    }
 }
 
 JSValue command_00(const JSObject& thisObject, const JSArgs& args)
@@ -195,6 +226,11 @@ void lsApp::processEvents() {
         case sf::Event::EventType::MouseButtonPressed:
         case sf::Event::EventType::MouseButtonReleased:
         {
+            if (sf::Event::MouseButtonPressed == event.type)
+            {
+                int a = 10;
+            }
+
             // app轮询事件，转发给window，window打包成ultralight事件后，
             // 再将事件转发给其监听者
             window_->OnMouseEvent(event);
@@ -216,7 +252,16 @@ void lsApp::processEvents() {
             else if (sub_event.type == sf::Event::MouseMoved ||
                      sub_event.type == sf::Event::MouseButtonPressed ||
                      sub_event.type == sf::Event::MouseButtonReleased) {
-                    subwindow.m_window->OnMouseEvent(event);
+                subwindow.m_window->OnMouseEvent(sub_event);
+            }
+            else if (sf::Event::KeyPressed == sub_event.type
+                || sf::Event::KeyReleased == sub_event.type)
+            {
+                if (sf::Event::KeyPressed == sub_event.type)
+                {
+                    int a = 10;
+                }
+                subwindow.m_window->OnKeyEvent(sub_event);
             }
         }
     }

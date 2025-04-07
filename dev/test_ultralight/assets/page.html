@@ -220,6 +220,7 @@
                     <div class="submenu-item" data-action="openHelp">使用帮助</div>
                     <div class="submenu-item" data-action="openShortcuts">快捷键列表</div>
                     <div class="submenu-item" data-action="openAbout">关于</div>
+                    <div class="submenu-item" data-action="openTest">测试</div>
                 </div>
             </li>
         </ul>
@@ -252,6 +253,10 @@
             switch(action) {
                 case 'openAbout':
                     js_open_window('file:///about.html');
+                    break;
+
+                case 'openTest':
+                    js_open_window('file:///test.html');
                     break;
             }
         }

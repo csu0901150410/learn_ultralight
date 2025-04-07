@@ -1,6 +1,10 @@
 ﻿#include "lsWindow.h"
 
-lsWindow::lsWindow(uint32_t width, uint32_t height) {
+static int SFMLKeyCodeToUltralightKeyCode(int key);
+
+lsWindow::lsWindow(uint32_t width, uint32_t height)
+    : listener_(nullptr)
+{
     window_ = new sf::RenderWindow(sf::VideoMode({ width, height }), "sfml window");
     window_->setVerticalSyncEnabled(true);// 开启垂直同步
 
@@ -104,5 +108,43 @@ void lsWindow::OnMouseEvent(const sf::Event &event) {
     }
 
     // 包装好ultralight事件结构体后传递给监听者
-    listener_->OnMouseEvent(evt);
+    listener_->OnMouseEvent(this, evt);
+}
+
+void lsWindow::OnKeyEvent(const sf::Event &event) {
+
+    // 要自己合成键盘事件，暂时还没有调通
+
+    ultralight::KeyEvent evt;
+
+    if (sf::Event::EventType::KeyPressed == event.type)
+        evt.type = ultralight::KeyEvent::kType_RawKeyDown;
+    else
+        evt.type = ultralight::KeyEvent::kType_KeyUp;
+
+    evt.virtual_key_code = SFMLKeyCodeToUltralightKeyCode(event.key.code);
+    evt.native_key_code = event.key.scancode;
+    evt.modifiers = 0;
+
+    if (event.key.shift)
+        evt.modifiers |= ultralight::KeyEvent::kMod_ShiftKey;
+
+    if (event.key.control)
+        evt.modifiers |= ultralight::KeyEvent::kMod_CtrlKey;
+
+    if (event.key.alt)
+        evt.modifiers |= ultralight::KeyEvent::kMod_AltKey;
+
+    ultralight::GetKeyIdentifierFromVirtualKeyCode(evt.virtual_key_code, evt.key_identifier);
+
+    listener_->OnKeyEvent(this, evt);
+}
+
+int SFMLKeyCodeToUltralightKeyCode(int key)
+{
+    switch (key)
+    {
+    case sf::Keyboard::Num1: return ultralight::KeyCodes::GK_0;
+    default: return ultralight::KeyCodes::GK_UNKNOWN;
+    }
 }
