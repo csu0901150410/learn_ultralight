@@ -137,6 +137,9 @@ void lsWindow::OnKeyEvent(const sf::Event &event) {
 
     ultralight::GetKeyIdentifierFromVirtualKeyCode(evt.virtual_key_code, evt.key_identifier);
 
+    GetKeyFromVirtualKeyCode(evt.virtual_key_code, false, evt.text);
+    evt.type = ultralight::KeyEvent::kType_Char;
+
     listener_->OnKeyEvent(this, evt);
 }
 
