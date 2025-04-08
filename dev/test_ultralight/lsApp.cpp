@@ -120,6 +120,7 @@ void lsApp::OnDOMReady(ultralight::View *caller, uint64_t frame_id, bool is_main
 
     // 注册c++函数到js全局对象，只能注册成员函数，可以在成员函数内分发
     globalObj["js_open_window"] = BindJSCallbackWithRetval(&lsApp::js_open_window);
+    globalObj["script_call_native"] = BindJSCallbackWithRetval(&lsApp::script_call_native);
 }
 
 void lsApp::OnChangeCursor(ultralight::View *caller, Cursor cursor) {
@@ -197,6 +198,17 @@ JSValue lsApp::js_open_window(const JSObject &thisObject, const JSArgs &args) {
 
     // create_subwindow("file:///page2.html");
     create_subwindow(url);
+
+    return JSValue();
+}
+
+JSValue lsApp::script_call_native(const JSObject &thisObject, const JSArgs &args) {
+    // 想办法调用到类外的非成员函数，之前有做过一个注册函数类的
+    // 参考 : https://github.com/csu0901150410/learn_opencv
+
+    double r = args[0].ToNumber();
+    double g = args[1].ToNumber();
+    double b = args[2].ToNumber();
 
     return JSValue();
 }

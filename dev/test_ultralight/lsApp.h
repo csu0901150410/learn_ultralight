@@ -39,6 +39,8 @@ public:
 
     JSValue js_open_window(const JSObject &thisObject, const JSArgs &args);
 
+    JSValue script_call_native(const JSObject &thisObject, const JSArgs &args);
+
 private:
     void processEvents();
     void update(sf::Time deltaTime);

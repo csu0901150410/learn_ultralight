@@ -1,6 +1,7 @@
 ﻿#include "lsWindow.h"
 
 static int SFMLKeyCodeToUltralightKeyCode(int key);
+static int SFMLModsToUltralightMods(const sf::Event& event);
 
 lsWindow::lsWindow(uint32_t width, uint32_t height)
     : listener_(nullptr)
@@ -122,32 +123,70 @@ void lsWindow::OnKeyEvent(const sf::Event &event) {
     else
         evt.type = ultralight::KeyEvent::kType_KeyUp;
 
-    evt.virtual_key_code = SFMLKeyCodeToUltralightKeyCode(event.key.code);
+    evt.virtual_key_code = SFMLKeyCodeToUltralightKeyCode(event.key.scancode);
     evt.native_key_code = event.key.scancode;
-    evt.modifiers = 0;
-
-    if (event.key.shift)
-        evt.modifiers |= ultralight::KeyEvent::kMod_ShiftKey;
-
-    if (event.key.control)
-        evt.modifiers |= ultralight::KeyEvent::kMod_CtrlKey;
-
-    if (event.key.alt)
-        evt.modifiers |= ultralight::KeyEvent::kMod_AltKey;
+    evt.modifiers = SFMLModsToUltralightMods(event);
 
     ultralight::GetKeyIdentifierFromVirtualKeyCode(evt.virtual_key_code, evt.key_identifier);
 
     GetKeyFromVirtualKeyCode(evt.virtual_key_code, false, evt.text);
-    evt.type = ultralight::KeyEvent::kType_Char;
+    evt.unmodified_text = evt.text;
 
     listener_->OnKeyEvent(this, evt);
+
+    if (ultralight::KeyEvent::kType_RawKeyDown == evt.type)
+    {
+        // 单个字符，触发字符事件
+        if (1 == evt.text.utf8().length())
+        {
+            evt.type = ultralight::KeyEvent::kType_Char;
+            listener_->OnKeyEvent(this, evt);
+        }
+    }
 }
 
 int SFMLKeyCodeToUltralightKeyCode(int key)
 {
     switch (key)
     {
-    case sf::Keyboard::Num1: return ultralight::KeyCodes::GK_0;
+    case sf::Keyboard::Scan::Num0: return ultralight::KeyCodes::GK_0;
+    case sf::Keyboard::Scan::Num1: return ultralight::KeyCodes::GK_1;
+    case sf::Keyboard::Scan::Num2: return ultralight::KeyCodes::GK_2;
+    case sf::Keyboard::Scan::Num3: return ultralight::KeyCodes::GK_3;
+    case sf::Keyboard::Scan::Num4: return ultralight::KeyCodes::GK_4;
+    case sf::Keyboard::Scan::Num5: return ultralight::KeyCodes::GK_5;
+    case sf::Keyboard::Scan::Num6: return ultralight::KeyCodes::GK_6;
+    case sf::Keyboard::Scan::Num7: return ultralight::KeyCodes::GK_7;
+    case sf::Keyboard::Scan::Num8: return ultralight::KeyCodes::GK_8;
+    case sf::Keyboard::Scan::Num9: return ultralight::KeyCodes::GK_9;
+    case sf::Keyboard::Scan::Numpad0: return ultralight::KeyCodes::GK_0;
+    case sf::Keyboard::Scan::Numpad1: return ultralight::KeyCodes::GK_1;
+    case sf::Keyboard::Scan::Numpad2: return ultralight::KeyCodes::GK_2;
+    case sf::Keyboard::Scan::Numpad3: return ultralight::KeyCodes::GK_3;
+    case sf::Keyboard::Scan::Numpad4: return ultralight::KeyCodes::GK_4;
+    case sf::Keyboard::Scan::Numpad5: return ultralight::KeyCodes::GK_5;
+    case sf::Keyboard::Scan::Numpad6: return ultralight::KeyCodes::GK_6;
+    case sf::Keyboard::Scan::Numpad7: return ultralight::KeyCodes::GK_7;
+    case sf::Keyboard::Scan::Numpad8: return ultralight::KeyCodes::GK_8;
+    case sf::Keyboard::Scan::Numpad9: return ultralight::KeyCodes::GK_9;
+    case sf::Keyboard::Scan::Period: return ultralight::KeyCodes::GK_DECIMAL;
+    case sf::Keyboard::Scan::NumpadDecimal: return ultralight::KeyCodes::GK_DECIMAL;
+    case sf::Keyboard::Scan::Backspace: return ultralight::KeyCodes::GK_BACK;
     default: return ultralight::KeyCodes::GK_UNKNOWN;
     }
+}
+
+int SFMLModsToUltralightMods(const sf::Event& event)
+{
+    int result = 0;
+    if (event.key.shift)
+        result |= ultralight::KeyEvent::kMod_ShiftKey;
+    if (event.key.control)
+        result |= ultralight::KeyEvent::kMod_CtrlKey;
+    if (event.key.alt)
+        result |= ultralight::KeyEvent::kMod_AltKey;
+    if (event.key.system)
+        result |= ultralight::KeyEvent::kMod_MetaKey;
+    return result;
+
 }
