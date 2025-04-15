@@ -169,8 +169,8 @@ int SFMLKeyCodeToUltralightKeyCode(int key)
     case sf::Keyboard::Scan::Numpad7: return ultralight::KeyCodes::GK_7;
     case sf::Keyboard::Scan::Numpad8: return ultralight::KeyCodes::GK_8;
     case sf::Keyboard::Scan::Numpad9: return ultralight::KeyCodes::GK_9;
-    case sf::Keyboard::Scan::Period: return ultralight::KeyCodes::GK_DECIMAL;
-    case sf::Keyboard::Scan::NumpadDecimal: return ultralight::KeyCodes::GK_DECIMAL;
+    case sf::Keyboard::Scan::Period: return ultralight::KeyCodes::GK_OEM_PERIOD;
+    case sf::Keyboard::Scan::NumpadDecimal: return ultralight::KeyCodes::GK_OEM_PERIOD;
     case sf::Keyboard::Scan::Backspace: return ultralight::KeyCodes::GK_BACK;
     default: return ultralight::KeyCodes::GK_UNKNOWN;
     }
